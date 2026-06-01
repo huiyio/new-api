@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import SkeletonWrapper from '../components/SkeletonWrapper';
 
 const Navigation = ({
@@ -28,6 +28,18 @@ const Navigation = ({
   userState,
   pricingRequireAuth,
 }) => {
+  const location = useLocation();
+
+  // 根据当前路径判断顶部导航是否处于激活态（外链/无 to 始终非激活，不影响跳转）
+  const isLinkActive = (link) => {
+    if (link.isExternal || !link.to) return false;
+    if (link.to === '/') return location.pathname === '/';
+    return (
+      location.pathname === link.to ||
+      location.pathname.startsWith(`${link.to}/`)
+    );
+  };
+
   const renderNavLinks = () => {
     const baseClasses =
       'flex-shrink-0 flex items-center gap-1 font-semibold rounded-md transition-all duration-200 ease-in-out';
@@ -61,8 +73,18 @@ const Navigation = ({
         targetPath = '/login';
       }
 
+      const active = isLinkActive(link);
+      const linkClasses = active
+        ? `${commonLinkClasses} home-nav-active text-semi-color-text-0`
+        : commonLinkClasses;
+
       return (
-        <Link key={link.itemKey} to={targetPath} className={commonLinkClasses}>
+        <Link
+          key={link.itemKey}
+          to={targetPath}
+          className={linkClasses}
+          aria-current={active ? 'page' : undefined}
+        >
           {linkContent}
         </Link>
       );

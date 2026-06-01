@@ -1,5 +1,17 @@
 {
   "translation": {
+    "一个 Endpoint，兼容 OpenAI、Claude、Gemini 等主流模型的 API": "Одна точка доступа, совместимая с API OpenAI, Claude, Gemini и других популярных моделей.",
+    "更多供应商": "Больше провайдеров",
+    "统一接入": "Единый доступ",
+    "一个 Endpoint 接入 40+ 上游供应商": "Одна точка доступа к 40+ провайдерам",
+    "兼容 OpenAI API": "Совместимо с OpenAI API",
+    "直接兼容主流 SDK": "Полная совместимость с популярными SDK",
+    "快速稳定": "Быстро и стабильно",
+    "低延迟路由与负载均衡": "Маршрутизация с низкой задержкой и балансировкой",
+    "安全可靠": "Безопасно и надёжно",
+    "细粒度密钥与访问控制": "Гибкие ключи и контроль доступа",
+    "高性价比": "Выгодно по цене",
+    "透明的按量计费": "Прозрачная оплата по факту использования",
     " + Web搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}_one": " + Web-поиск {{count}} раз / 1K раз * {{symbol}}{{price}} * {{ratioType}} {{ratio}}",
     " + Web搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}_few": " + Web-поиск {{count}} раза / 1K раз * {{symbol}}{{price}} * {{ratioType}} {{ratio}}",
     " + Web搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}_many": " + Web-поиск {{count}} раз / 1K раз * {{symbol}}{{price}} * {{ratioType}} {{ratio}}",

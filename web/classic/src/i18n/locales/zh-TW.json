@@ -1,5 +1,17 @@
 {
   "translation": {
+    "一个 Endpoint，兼容 OpenAI、Claude、Gemini 等主流模型的 API": "一個 Endpoint，相容 OpenAI、Claude、Gemini 等主流模型的 API",
+    "更多供应商": "更多供應商",
+    "统一接入": "統一接入",
+    "一个 Endpoint 接入 40+ 上游供应商": "一個 Endpoint 接入 40+ 上游供應商",
+    "兼容 OpenAI API": "相容 OpenAI API",
+    "直接兼容主流 SDK": "直接相容主流 SDK",
+    "快速稳定": "快速穩定",
+    "低延迟路由与负载均衡": "低延遲路由與負載平衡",
+    "安全可靠": "安全可靠",
+    "细粒度密钥与访问控制": "細粒度金鑰與存取控制",
+    "高性价比": "高性價比",
+    "透明的按量计费": "透明的按量計費",
     " + Web搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}_other": " + Web搜尋 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}",
     " + 图片生成调用 {{symbol}}{{price}} / 1次 * {{ratioType}} {{ratio}}": " + 圖片生成調用 {{symbol}}{{price}} / 1次 * {{ratioType}} {{ratio}}",
     " + 文件搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}_other": " + 檔案搜尋 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}",

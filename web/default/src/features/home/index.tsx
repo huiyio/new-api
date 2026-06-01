@@ -21,7 +21,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { Markdown } from '@/components/ui/markdown'
 import { PublicLayout } from '@/components/layout'
 import { Footer } from '@/components/layout/components/footer'
-import { CTA, Features, Hero, HowItWorks, Stats } from './components'
+import { CTA, FeatureStrip, Features, Hero, HowItWorks, ProviderGrid, Stats } from './components'
 import { useHomePageContent } from './hooks'
 
 export function Home() {
@@ -63,6 +63,8 @@ export function Home() {
   return (
     <PublicLayout showMainContainer={false}>
       <Hero isAuthenticated={isAuthenticated} />
+      <ProviderGrid className='pt-8 pb-12 md:pt-12 md:pb-16' />
+      <FeatureStrip className='px-6 pb-16 md:pb-20' />
       <Stats />
       <Features />
       <HowItWorks />

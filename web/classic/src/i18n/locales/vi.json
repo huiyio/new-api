@@ -1,5 +1,17 @@
 {
   "translation": {
+    "一个 Endpoint，兼容 OpenAI、Claude、Gemini 等主流模型的 API": "Một endpoint, tương thích với API của OpenAI, Claude, Gemini và các mô hình phổ biến khác.",
+    "更多供应商": "Thêm nhà cung cấp",
+    "统一接入": "Truy cập hợp nhất",
+    "一个 Endpoint 接入 40+ 上游供应商": "Một endpoint cho hơn 40 nhà cung cấp",
+    "兼容 OpenAI API": "Tương thích OpenAI API",
+    "直接兼容主流 SDK": "Tương thích trực tiếp với các SDK phổ biến",
+    "快速稳定": "Nhanh & ổn định",
+    "低延迟路由与负载均衡": "Định tuyến độ trễ thấp với cân bằng tải",
+    "安全可靠": "An toàn & đáng tin cậy",
+    "细粒度密钥与访问控制": "Khóa chi tiết và kiểm soát truy cập",
+    "高性价比": "Hiệu quả chi phí",
+    "透明的按量计费": "Tính phí minh bạch theo mức dùng",
     " + Web搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}_one": " + Tìm kiếm Web {{count}} lần / 1K lần * {{symbol}}{{price}} * {{ratioType}} {{ratio}}",
     " + Web搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}_other": " + Tìm kiếm Web {{count}} lần / 1K lần * {{symbol}}{{price}} * {{ratioType}} {{ratio}}",
     " + 图片生成调用 {{symbol}}{{price}} / 1次 * {{ratioType}} {{ratio}}": " + Gọi tạo hình ảnh {{symbol}}{{price}} / 1 lần * {{ratioType}} {{ratio}}",

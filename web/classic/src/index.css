@@ -1024,3 +1024,2056 @@ html.dark .with-pastel-balls::before {
 }
 
 .ec-dbcd0a3c01b55203 { forced-color-adjust: auto; }
+
+/* ==================== 首页技术风背景（明/暗仅颜色不同，结构一致） ==================== */
+.home-tech {
+  /* 默认（明亮模式）：主题背景 + 面板 / 网格 / 点阵 / 代码 / endpoint 一套变量 */
+  --home-bg: #f7f9fc;
+  --home-panel: #ffffff;
+  --home-panel-hover: #f1f5f9;
+  --home-panel-border: rgba(15, 23, 42, 0.1);
+  --home-grid-line: rgba(15, 23, 42, 0.08);
+  --home-dot: rgba(15, 23, 42, 0.14);
+  --home-code: rgba(15, 23, 42, 0.05);
+  --home-code-fg: rgba(30, 41, 59, 0.82);
+  --home-code-no: rgba(100, 116, 139, 0.66);
+  --home-code-method: rgba(29, 78, 216, 0.82);
+  --home-code-url: rgba(14, 116, 144, 0.82);
+  --home-code-key: rgba(109, 40, 217, 0.82);
+  --home-code-string: rgba(4, 120, 87, 0.82);
+  --home-code-value: rgba(180, 83, 9, 0.85);
+  --home-code-punc: rgba(71, 85, 105, 0.68);
+  --home-endpoint-border: rgba(99, 102, 241, 0.3);
+  --home-endpoint-path: #2563eb;
+  --home-glow: rgba(99, 102, 241, 0.16);
+  --home-grid-opacity: 1;
+  --home-dot-opacity: 1;
+  --home-endpoint-scan: rgba(99, 102, 241, 0.14);
+  --home-card-sweep: rgba(99, 102, 241, 0.07);
+  --home-success-aura: rgba(34, 197, 94, 0.32);
+  background-color: var(--home-bg);
+}
+
+html.dark .home-tech {
+  /* 暗色模式：深蓝黑控制台背景 + 半透明面板，DOM 与布局保持不变 */
+  --home-bg: #070b18;
+  --home-panel: rgba(255, 255, 255, 0.045);
+  --home-panel-hover: rgba(255, 255, 255, 0.08);
+  --home-panel-border: rgba(255, 255, 255, 0.1);
+  --home-grid-line: rgba(148, 163, 184, 0.13);
+  --home-dot: rgba(148, 163, 184, 0.2);
+  --home-code: rgba(148, 163, 184, 0.13);
+  --home-code-fg: rgba(148, 163, 184, 0.5);
+  --home-code-no: rgba(148, 163, 184, 0.3);
+  --home-code-method: rgba(110, 231, 183, 0.66);
+  --home-code-url: rgba(125, 211, 252, 0.66);
+  --home-code-key: rgba(196, 181, 253, 0.72);
+  --home-code-string: rgba(134, 239, 172, 0.62);
+  --home-code-value: rgba(252, 211, 77, 0.66);
+  --home-code-punc: rgba(148, 163, 184, 0.46);
+  --home-endpoint-border: rgba(129, 140, 248, 0.5);
+  --home-endpoint-path: #7aa2ff;
+  --home-glow: rgba(99, 102, 241, 0.28);
+  --home-grid-opacity: 1;
+  --home-dot-opacity: 1;
+  --home-endpoint-scan: rgba(129, 140, 248, 0.22);
+  --home-card-sweep: rgba(129, 140, 248, 0.14);
+  --home-success-aura: rgba(74, 222, 128, 0.5);
+}
+
+.home-tech-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.home-tech-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 0%,
+    var(--home-glow) 0%,
+    transparent 70%
+  );
+}
+
+.home-tech-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+      to right,
+      var(--home-grid-line) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, var(--home-grid-line) 1px, transparent 1px);
+  background-size: 3rem 3rem;
+  opacity: var(--home-grid-opacity);
+  -webkit-mask-image: radial-gradient(
+    ellipse 80% 70% at 60% 30%,
+    black 10%,
+    transparent 85%
+  );
+  mask-image: radial-gradient(
+    ellipse 80% 70% at 60% 30%,
+    black 10%,
+    transparent 85%
+  );
+  animation: home-tech-grid-drift 70s linear infinite;
+  will-change: background-position;
+}
+
+@keyframes home-tech-grid-drift {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position: 3rem 3rem, 3rem 3rem;
+  }
+}
+
+.home-tech-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    var(--home-dot) 1px,
+    transparent 1px
+  );
+  background-size: 1.5rem 1.5rem;
+  opacity: var(--home-dot-opacity);
+  -webkit-mask-image: radial-gradient(
+    ellipse 65% 65% at 80% 55%,
+    black 0%,
+    transparent 78%
+  );
+  mask-image: radial-gradient(
+    ellipse 65% 65% at 80% 55%,
+    black 0%,
+    transparent 78%
+  );
+  animation: home-tech-dots-drift 110s linear infinite;
+  will-change: background-position;
+}
+
+@keyframes home-tech-dots-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: -1.5rem 1.5rem;
+  }
+}
+
+.home-tech-code {
+  position: absolute;
+  top: 7.25rem;
+  left: 2.75rem;
+  display: none;
+  margin: 0;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  text-align: left;
+  color: var(--home-code-fg);
+  transform: none;
+  user-select: none;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black 35%,
+    rgba(0, 0, 0, 0.72) 58%,
+    rgba(0, 0, 0, 0.34) 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black 35%,
+    rgba(0, 0, 0, 0.72) 58%,
+    rgba(0, 0, 0, 0.34) 82%,
+    transparent 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+.home-code-line {
+  display: flex;
+  white-space: pre;
+}
+
+.home-code-no {
+  flex: none;
+  width: 1.4rem;
+  margin-right: 1rem;
+  text-align: right;
+  color: var(--home-code-no);
+}
+
+.home-code-method {
+  color: var(--home-code-method);
+  font-weight: 600;
+}
+
+.home-code-url {
+  color: var(--home-code-url);
+}
+
+.home-code-key {
+  color: var(--home-code-key);
+}
+
+.home-code-string {
+  color: var(--home-code-string);
+}
+
+.home-code-value {
+  color: var(--home-code-value);
+}
+
+.home-code-punc {
+  color: var(--home-code-punc);
+}
+
+@media (min-width: 1024px) {
+  .home-tech-code {
+    display: block;
+  }
+}
+
+/* 标题蓝紫渐变强调：在中段插入接近白色的高光，配合 shimmer 横向平移形成"金属高光"扫光 */
+.home-title-gradient {
+  background-image: linear-gradient(
+    100deg,
+    #2563eb 0%,
+    #4f46e5 22%,
+    #6366f1 38%,
+    #c7d2fe 48%,
+    #ffffff 50%,
+    #c7d2fe 52%,
+    #6366f1 62%,
+    #7c3aed 78%,
+    #8b5cf6 100%
+  );
+  background-size: 260% auto;
+  background-repeat: no-repeat;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+html.dark .home-title-gradient {
+  background-image: linear-gradient(
+    100deg,
+    #60a5fa 0%,
+    #818cf8 22%,
+    #a5b4fc 38%,
+    #ddd6fe 48%,
+    #ffffff 50%,
+    #ddd6fe 52%,
+    #a78bfa 62%,
+    #c4b5fd 78%,
+    #a78bfa 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ============ Hero 主标题动画 ============ */
+
+/* h1 容器：为 sweep 等绝对定位元素提供参考 */
+.home-hero-title {
+  position: relative;
+}
+
+/* 两行容器均为 inline-block，宽度自适应文字，便于 sweep 仅覆盖文字宽度 */
+.home-hero-title-line {
+  display: inline-block;
+  position: relative;
+}
+
+/* 第一行：每个汉字单独入场，stagger 上浮淡入 */
+.home-hero-title-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.55em);
+  animation: home-hero-fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--char-i, 0) * 70ms + 80ms);
+  will-change: transform, opacity;
+}
+
+/* 第二行：整体上浮，延迟到第一行后半段开始 */
+.home-hero-title-line-2 {
+  opacity: 0;
+  transform: translateY(0.45em);
+  animation: home-hero-fade-up 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) 0.36s both;
+  will-change: transform, opacity;
+}
+
+/* 渐变文字 shimmer：很慢的横向流光，不影响布局 */
+.home-title-gradient-shimmer {
+  animation: home-title-shimmer 7s ease-in-out 0.9s infinite;
+}
+
+/* 第二行下方的细光带：从左向右缓慢扫过，循环出现 */
+.home-hero-title-sweep {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.22em;
+  height: 1px;
+  pointer-events: none;
+  background-image: linear-gradient(
+    90deg,
+    rgba(99, 102, 241, 0) 0%,
+    rgba(99, 102, 241, 0) 35%,
+    rgba(99, 102, 241, 0.55) 50%,
+    rgba(99, 102, 241, 0) 65%,
+    rgba(99, 102, 241, 0) 100%
+  );
+  background-size: 220% 100%;
+  background-position: -60% 0;
+  background-repeat: no-repeat;
+  opacity: 0;
+  animation: home-hero-sweep 6.5s ease-in-out 1.4s infinite;
+}
+
+html.dark .home-hero-title-sweep {
+  background-image: linear-gradient(
+    90deg,
+    rgba(167, 139, 250, 0) 0%,
+    rgba(167, 139, 250, 0) 35%,
+    rgba(167, 139, 250, 0.7) 50%,
+    rgba(167, 139, 250, 0) 65%,
+    rgba(167, 139, 250, 0) 100%
+  );
+}
+
+@keyframes home-hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.55em);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes home-title-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes home-hero-sweep {
+  0% {
+    background-position: -60% 0;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    background-position: 160% 0;
+    opacity: 0;
+  }
+}
+
+/* 尊重系统的减弱动画偏好：关闭入场/流光/光带，保留静态视觉 */
+@media (prefers-reduced-motion: reduce) {
+  .home-hero-title-char,
+  .home-hero-title-line-2 {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .home-title-gradient-shimmer {
+    animation: none;
+  }
+
+  .home-hero-title-sweep {
+    display: none;
+  }
+}
+
+/* Hero 整体在桌面端下移、拉开一点（移动端沿用基础内边距） */
+@media (min-width: 768px) {
+  .home-hero-section .home-hero-inner {
+    padding-top: 8rem; /* 较原 md:pt-24(6rem) 下移约 32px */
+    padding-bottom: 3rem;
+  }
+}
+
+/* 桌面端主标题放大：贴近深色参考图的视觉重心，下压 endpoint 与供应商区域；移动端不受影响 */
+@media (min-width: 1024px) {
+  .home-hero-section h1 {
+    max-width: 58rem;
+    font-size: 5rem;
+    line-height: 1.05;
+    letter-spacing: 0;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .home-hero-section h1 {
+    font-size: 4.5rem;
+  }
+}
+
+/* endpoint 路径 /v1/chat/completions：明暗模式都显示蓝色 */
+.home-endpoint-path {
+  color: var(--home-endpoint-path);
+}
+
+/* endpoint 宽条：蓝紫细描边 + 半透明面板 + 轻微 glow */
+.home-endpoint-shell {
+  border: 1px solid var(--home-endpoint-border);
+  background: var(--home-panel);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05),
+    0 0 18px -10px var(--home-endpoint-border);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.home-endpoint-shell:hover {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06),
+    0 0 22px -8px var(--home-endpoint-border);
+}
+
+.home-endpoint-divider {
+  background: var(--home-panel-border);
+}
+
+html.dark .home-tech .home-endpoint-shell {
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 26px -6px rgba(129, 140, 248, 0.55);
+}
+
+html.dark .home-tech .home-endpoint-shell:hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 32px -4px rgba(129, 140, 248, 0.7);
+}
+
+/* 供应商卡片：~8px 圆角、面板背景、hover 蓝紫描边 */
+.home-provider-card {
+  border: 1px solid var(--home-panel-border);
+  background: var(--home-panel);
+  border-radius: 8px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.home-provider-card:hover {
+  background: var(--home-panel-hover);
+  border-color: var(--home-endpoint-border);
+}
+
+.home-provider-card--more {
+  background: var(--home-panel-hover);
+}
+
+/* 功能条：~8px 圆角、面板背景、内部分隔与 hover */
+.home-feature-strip {
+  border: 1px solid var(--home-panel-border);
+  background: var(--home-panel);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.home-feature-strip .home-feature-item {
+  border-color: var(--home-panel-border);
+  transition: background-color 0.2s ease;
+}
+
+.home-feature-strip .home-feature-item:hover {
+  background: var(--home-panel-hover);
+}
+
+/* 顶部导航激活态：文字更亮 + 底部 cyan/blue 下划线 */
+.home-nav-active {
+  position: relative;
+  color: var(--semi-color-text-0);
+}
+
+.home-nav-active::after {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0.25rem;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #22d3ee, #3b82f6);
+}
+
+/* ==================== 首页供应商 Featured 大卡 ==================== */
+/* 8px 圆角；细边框；轻微玻璃质感；顶部一条细的品牌色 highlight */
+.home-provider-featured {
+  position: relative;
+  border: 1px solid var(--home-panel-border);
+  background: var(--home-panel);
+  border-radius: 8px;
+  min-height: 172px;
+  overflow: hidden;
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.home-provider-featured::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--home-featured-accent, transparent);
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.home-provider-featured:hover {
+  background: var(--home-panel-hover);
+  border-color: var(
+    --home-featured-accent-border,
+    var(--home-endpoint-border)
+  );
+  box-shadow: 0 10px 30px -20px
+    var(--home-featured-accent, var(--home-endpoint-border));
+}
+
+.home-provider-featured:hover::before {
+  opacity: 1;
+}
+
+.home-provider-featured__icon {
+  height: 44px;
+  width: 44px;
+}
+
+@media (max-width: 767px) {
+  .home-provider-featured {
+    min-height: 152px;
+  }
+}
+
+/* 品牌色变体：OpenAI 绿 / Claude 橙 / Gemini 蓝紫 / DeepSeek 蓝 */
+.home-provider-featured--openai {
+  --home-featured-accent: #10a37f;
+  --home-featured-accent-soft: rgba(16, 163, 127, 0.12);
+  --home-featured-accent-border: rgba(16, 163, 127, 0.4);
+  --home-featured-pill-text: #047857;
+}
+
+.home-provider-featured--claude {
+  --home-featured-accent: #d97706;
+  --home-featured-accent-soft: rgba(217, 119, 6, 0.12);
+  --home-featured-accent-border: rgba(217, 119, 6, 0.4);
+  --home-featured-pill-text: #b45309;
+}
+
+.home-provider-featured--gemini {
+  --home-featured-accent: #6366f1;
+  --home-featured-accent-soft: rgba(99, 102, 241, 0.12);
+  --home-featured-accent-border: rgba(99, 102, 241, 0.4);
+  --home-featured-pill-text: #4338ca;
+}
+
+.home-provider-featured--deepseek {
+  --home-featured-accent: #2563eb;
+  --home-featured-accent-soft: rgba(37, 99, 235, 0.12);
+  --home-featured-accent-border: rgba(37, 99, 235, 0.4);
+  --home-featured-pill-text: #1d4ed8;
+}
+
+/* 暗色模式：pill 文字与背景都需要更亮的色调以保证对比 */
+html.dark .home-provider-featured--openai {
+  --home-featured-accent-soft: rgba(16, 185, 129, 0.16);
+  --home-featured-accent-border: rgba(52, 211, 153, 0.5);
+  --home-featured-pill-text: #34d399;
+}
+
+html.dark .home-provider-featured--claude {
+  --home-featured-accent-soft: rgba(251, 146, 60, 0.16);
+  --home-featured-accent-border: rgba(251, 191, 36, 0.5);
+  --home-featured-pill-text: #fbbf24;
+}
+
+html.dark .home-provider-featured--gemini {
+  --home-featured-accent-soft: rgba(129, 140, 248, 0.18);
+  --home-featured-accent-border: rgba(165, 180, 252, 0.55);
+  --home-featured-pill-text: #a5b4fc;
+}
+
+html.dark .home-provider-featured--deepseek {
+  --home-featured-accent-soft: rgba(96, 165, 250, 0.18);
+  --home-featured-accent-border: rgba(147, 197, 253, 0.55);
+  --home-featured-pill-text: #93c5fd;
+}
+
+/* ==================== 兼容性 pill ==================== */
+.home-provider-pill {
+  border-radius: 9999px;
+  border: 1px solid var(--home-panel-border);
+  background: var(--home-panel-hover);
+  color: var(--semi-color-text-2);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.home-provider-pill--featured {
+  background: var(--home-featured-accent-soft);
+  border-color: var(--home-featured-accent-border);
+  color: var(--home-featured-pill-text);
+}
+
+/* 小卡 pill 不要边框/背景：圆点 + 文字即可，避免视觉过重 */
+.home-provider-pill--inline {
+  background: transparent;
+  border-color: transparent;
+  padding-left: 0;
+  padding-right: 0;
+  color: var(--semi-color-text-2);
+}
+
+.home-provider-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: currentColor;
+}
+
+.home-provider-dot--neutral {
+  opacity: 0.55;
+}
+
+/* ==================== 首页供应商区域（新版网格） ==================== */
+/* 对应 Home/index.jsx 中 .home-provider-featured-grid / .home-provider-featured-card
+   及 .home-provider-secondary-grid / .home-provider-secondary-card 等结构。
+   旧的 .home-provider-card / .home-provider-featured 规则保留以免影响其他位置。 */
+
+.home-provider-section {
+  position: relative;
+  z-index: 1;
+  padding: 1.5rem 1rem;
+}
+
+@media (min-width: 768px) {
+  .home-provider-section {
+    padding: 2rem 1rem;
+  }
+}
+
+.home-provider-heading {
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--semi-color-text-0);
+}
+
+@media (min-width: 768px) {
+  .home-provider-heading {
+    font-size: 1.5rem;
+  }
+}
+
+/* ---- Featured 大卡网格：桌面 4 列、平板 2 列、移动 1 列 ---- */
+.home-provider-featured-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 479px) {
+  .home-provider-featured-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-provider-featured-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+/* ---- Featured 大卡本体 ---- */
+.home-provider-featured-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.75rem 1rem;
+  min-height: 232px;
+  border: 1px solid var(--home-panel-border);
+  background: var(--home-panel);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.home-provider-featured-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--home-featured-accent, transparent);
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+
+.home-provider-featured-card:hover {
+  background: var(--home-panel-hover);
+  border-color: var(
+    --home-featured-accent-border,
+    var(--home-endpoint-border)
+  );
+  box-shadow:
+    0 14px 36px -22px var(--home-featured-accent, var(--home-endpoint-border)),
+    0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.home-provider-featured-card:hover::before {
+  opacity: 1;
+}
+
+@media (min-width: 1024px) {
+  .home-provider-featured-card {
+    min-height: 288px;
+    padding: 2rem 1rem;
+    gap: 0.875rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .home-provider-featured-card {
+    min-height: 192px;
+    padding: 1.25rem 0.875rem;
+    gap: 0.625rem;
+  }
+}
+
+html.dark .home-provider-featured-card {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+html.dark .home-provider-featured-card:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 16px 40px -22px var(--home-featured-accent, var(--home-endpoint-border));
+}
+
+/* Featured 大卡：图标居中、放大；plain SVG 通过 currentColor 接 accent */
+.home-provider-featured-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  color: var(--home-featured-accent, var(--semi-color-text-0));
+}
+
+@media (min-width: 1024px) {
+  .home-provider-featured-icon {
+    width: 88px;
+    height: 88px;
+  }
+}
+
+@media (max-width: 767px) {
+  .home-provider-featured-icon {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* Featured 大卡名称：居中、单行不溢出 */
+.home-provider-featured-name {
+  display: block;
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--semi-color-text-0);
+  line-height: 1.3;
+  max-width: 100%;
+  padding: 0 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 1024px) {
+  .home-provider-featured-name {
+    font-size: 1.375rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .home-provider-featured-name {
+    font-size: 1.0625rem;
+  }
+}
+
+/* ---- Featured 大卡品牌色变体 ---- */
+.home-provider-featured-card--openai {
+  --home-featured-accent: #10a37f;
+  --home-featured-accent-soft: rgba(16, 163, 127, 0.12);
+  --home-featured-accent-border: rgba(16, 163, 127, 0.4);
+  --home-featured-pill-text: #047857;
+}
+
+.home-provider-featured-card--claude {
+  --home-featured-accent: #d97706;
+  --home-featured-accent-soft: rgba(217, 119, 6, 0.12);
+  --home-featured-accent-border: rgba(217, 119, 6, 0.4);
+  --home-featured-pill-text: #b45309;
+}
+
+.home-provider-featured-card--gemini {
+  --home-featured-accent: #6366f1;
+  --home-featured-accent-soft: rgba(99, 102, 241, 0.12);
+  --home-featured-accent-border: rgba(99, 102, 241, 0.4);
+  --home-featured-pill-text: #4338ca;
+}
+
+.home-provider-featured-card--deepseek {
+  --home-featured-accent: #2563eb;
+  --home-featured-accent-soft: rgba(37, 99, 235, 0.12);
+  --home-featured-accent-border: rgba(37, 99, 235, 0.4);
+  --home-featured-pill-text: #1d4ed8;
+}
+
+html.dark .home-provider-featured-card--openai {
+  --home-featured-accent-soft: rgba(16, 185, 129, 0.18);
+  --home-featured-accent-border: rgba(52, 211, 153, 0.5);
+  --home-featured-pill-text: #34d399;
+}
+
+html.dark .home-provider-featured-card--claude {
+  --home-featured-accent-soft: rgba(251, 146, 60, 0.18);
+  --home-featured-accent-border: rgba(251, 191, 36, 0.5);
+  --home-featured-pill-text: #fbbf24;
+}
+
+html.dark .home-provider-featured-card--gemini {
+  --home-featured-accent-soft: rgba(129, 140, 248, 0.2);
+  --home-featured-accent-border: rgba(165, 180, 252, 0.55);
+  --home-featured-pill-text: #a5b4fc;
+}
+
+html.dark .home-provider-featured-card--deepseek {
+  --home-featured-accent-soft: rgba(96, 165, 250, 0.2);
+  --home-featured-accent-border: rgba(147, 197, 253, 0.55);
+  --home-featured-pill-text: #93c5fd;
+}
+
+/* ---- 二级小卡网格：桌面 6 列两行，平板 3 列，移动 1-2 列 ---- */
+.home-provider-secondary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 480px) {
+  .home-provider-secondary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.625rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .home-provider-secondary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-provider-secondary-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+}
+
+/* ---- 二级小卡 + 30+ more 卡：左 icon、右内容 ---- */
+.home-provider-secondary-card,
+.home-provider-more-card {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  min-height: 92px;
+  border: 1px solid var(--home-panel-border);
+  background: var(--home-panel);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 1px rgba(15, 23, 42, 0.03);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.home-provider-secondary-card:hover,
+.home-provider-more-card:hover {
+  background: var(--home-panel-hover);
+  border-color: var(--home-endpoint-border);
+}
+
+.home-provider-more-card {
+  background: var(--home-panel-hover);
+}
+
+html.dark .home-provider-secondary-card,
+html.dark .home-provider-more-card {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* 同时承载 SVG logo 与 "30+" 文本，统一固定外框 */
+.home-provider-secondary-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 32px;
+  height: 32px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--semi-color-text-1);
+  line-height: 1;
+}
+
+.home-provider-more-card .home-provider-secondary-icon {
+  color: var(--semi-color-text-0);
+  font-size: 14px;
+}
+
+.home-provider-secondary-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.home-provider-secondary-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--semi-color-text-0);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- pill / dot 在新版结构中的细节 ---- */
+.home-provider-featured-card .home-provider-pill,
+.home-provider-secondary-card .home-provider-pill,
+.home-provider-more-card .home-provider-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 2px 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* featured pill: 居中、带 accent 浅底 */
+.home-provider-featured-card .home-provider-pill {
+  align-self: center;
+  padding: 3px 10px;
+  font-size: 12px;
+  background: var(--home-featured-accent-soft, var(--home-panel-hover));
+  border-color: var(
+    --home-featured-accent-border,
+    var(--home-panel-border)
+  );
+  color: var(--home-featured-pill-text, var(--semi-color-text-2));
+}
+
+/* secondary / more pill: 不要 chip 边框背景，只留圆点 + 文字 */
+.home-provider-secondary-card .home-provider-pill,
+.home-provider-more-card .home-provider-pill {
+  padding-left: 0;
+  padding-right: 0;
+  background: transparent;
+  border-color: transparent;
+  color: var(--semi-color-text-2);
+}
+
+.home-provider-secondary-card .home-provider-dot,
+.home-provider-more-card .home-provider-dot {
+  opacity: 0.55;
+}
+
+/* 让 flex 子项能正确截断（Tailwind .truncate 在 flex 子项里需要 min-width:0） */
+.home-provider-featured-card .home-provider-pill > span,
+.home-provider-secondary-card .home-provider-pill > span,
+.home-provider-more-card .home-provider-pill > span {
+  min-width: 0;
+}
+
+/* ==================== 首页：分阶段入场 + 悬浮微动效（仅 opacity / transform / box-shadow / background-position） ==================== */
+
+/* 通用 stagger 入场关键帧：上浮 + 淡入 */
+@keyframes home-stage-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 背景代码：先轻微淡入上浮，随后极慢的呼吸（不抢主标题） */
+.home-tech-code {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: home-code-enter 0.9s ease-out 0.2s both,
+    home-code-breath 14s ease-in-out 1.4s infinite;
+  will-change: opacity, transform;
+}
+
+@keyframes home-code-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes home-code-breath {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.78;
+    transform: translateY(-3px);
+  }
+}
+
+/* 副标题 / endpoint / 操作按钮：在主标题之后分阶段进入
+   使用 backwards：延迟期间显示 from 关键帧（透明+下移），
+   动画结束后回到普通规则（opacity:1, transform:none），
+   避免占用 transform，使后续 hover transform 能正常生效。 */
+.home-hero-subtitle,
+.home-hero-endpoint,
+.home-hero-actions {
+  animation: home-stage-fade-up 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  will-change: opacity, transform;
+}
+
+.home-hero-subtitle {
+  animation-delay: 0.9s;
+}
+
+.home-hero-endpoint {
+  animation-delay: 1.05s;
+}
+
+.home-hero-actions {
+  animation-delay: 1.2s;
+}
+
+/* endpoint 条 hover：轻微上浮（既有 box-shadow 发光保留） */
+.home-endpoint-shell {
+  transition: border-color 0.2s ease, box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+
+.home-endpoint-shell:hover {
+  transform: translateY(-1px);
+}
+
+/* 供应商区标题与副标题：作为一个块淡入上浮 */
+.home-provider-heading-block {
+  animation: home-stage-fade-up 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 1.35s backwards;
+  will-change: opacity, transform;
+}
+
+/* Featured 大卡：stagger 入场 + hover 微上浮 + logo 放大/glow
+   使用 backwards：延迟期间停留在 from 关键帧（透明+下移），
+   动画结束后释放 transform/opacity 占用，hover translateY(-3px) 才能生效。 */
+.home-provider-featured-card {
+  animation: home-stage-fade-up 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation-delay: calc(1.5s + var(--card-i, 0) * 80ms);
+  /* 覆盖既有 transition，加入 transform */
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.25s ease, transform 0.25s ease;
+  will-change: opacity, transform;
+}
+
+.home-provider-featured-card:hover {
+  transform: translateY(-3px);
+}
+
+.home-provider-featured-icon {
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.home-provider-featured-card:hover .home-provider-featured-icon {
+  transform: scale(1.06);
+  filter: drop-shadow(
+    0 8px 20px var(--home-featured-accent-border, rgba(99, 102, 241, 0.4))
+  );
+}
+
+/* 二级小卡 + 30+ 占位卡：stagger 入场 + hover 微上浮 + logo 微放大
+   使用 backwards：理由同 featured 大卡，确保 hover translateY(-2px) 不被填充态盖住。 */
+.home-provider-secondary-card,
+.home-provider-more-card {
+  animation: home-stage-fade-up 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation-delay: calc(1.85s + var(--card-i, 0) * 40ms);
+  /* 覆盖既有 transition，加入 transform */
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.25s ease, transform 0.25s ease;
+  will-change: opacity, transform;
+}
+
+.home-provider-secondary-card:hover,
+.home-provider-more-card:hover {
+  transform: translateY(-2px);
+}
+
+.home-provider-secondary-icon {
+  transition: transform 0.25s ease;
+}
+
+.home-provider-secondary-card:hover .home-provider-secondary-icon,
+.home-provider-more-card:hover .home-provider-secondary-icon {
+  transform: scale(1.08);
+}
+
+/* 功能条：作为一个块淡入上浮 */
+.home-feature-strip-block {
+  animation: home-stage-fade-up 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 2.4s backwards;
+  will-change: opacity, transform;
+}
+
+/* 单个 feature hover：图标小幅上浮 + 放大 + 轻微 glow */
+.home-feature-icon {
+  transition: transform 0.25s ease, box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.home-feature-item:hover .home-feature-icon {
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 6px 18px -10px rgba(99, 102, 241, 0.45);
+}
+
+html.dark .home-feature-item:hover .home-feature-icon {
+  box-shadow: 0 6px 20px -10px rgba(129, 140, 248, 0.55);
+}
+
+/* 尊重系统的减弱动画偏好：关闭新增入场 / 循环 / hover 动效，静态视觉保留 */
+@media (prefers-reduced-motion: reduce) {
+  .home-tech-code,
+  .home-hero-subtitle,
+  .home-hero-endpoint,
+  .home-hero-actions,
+  .home-provider-heading-block,
+  .home-provider-featured-card,
+  .home-provider-secondary-card,
+  .home-provider-more-card,
+  .home-feature-strip-block {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .home-endpoint-shell:hover,
+  .home-provider-featured-card:hover,
+  .home-provider-secondary-card:hover,
+  .home-provider-more-card:hover {
+    transform: none;
+  }
+
+  .home-provider-featured-card:hover .home-provider-featured-icon,
+  .home-provider-secondary-card:hover .home-provider-secondary-icon,
+  .home-provider-more-card:hover .home-provider-secondary-icon,
+  .home-feature-item:hover .home-feature-icon {
+    transform: none;
+    filter: none;
+    box-shadow: none;
+  }
+
+  .home-tech-grid,
+  .home-tech-dots {
+    animation: none;
+  }
+}
+
+/* ====================================================================
+   首页动效增强覆盖块（仅追加，不改既有规则 / JSX / 布局 / 文案 / 业务逻辑）
+   后置覆盖把"普通版"动画替换为"高级版"。
+   仅使用 opacity / transform / filter / box-shadow /
+         background-image / background-position / background-size。
+   不修改宽高，不使用负 letter-spacing，不引入新依赖。
+   ==================================================================== */
+
+/* ---------- 1. Hero 主标题：每字 blur-up + 缩放 + 上浮 ----------
+   静态状态显式归零，避免 both 模式占用 transform/filter；
+   使用 backwards，让 hover 阶段的 transform 不被填充态覆盖。
+   保留 stagger 变量 --char-i。 */
+.home-hero-title-char {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  animation: home-hero-char-rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation-delay: calc(var(--char-i, 0) * 70ms + 80ms);
+}
+
+.home-hero-title-line-2 {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  animation: home-hero-char-rise 1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.42s
+    backwards;
+}
+
+@keyframes home-hero-char-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0.55em) scale(0.95);
+    filter: blur(10px);
+  }
+  55% {
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* ---------- 2. 标题渐变 shimmer：略快但克制（5.5s） ----------
+   仅改变 background-position，不影响布局。 */
+.home-title-gradient-shimmer {
+  animation: home-title-shimmer 5.5s ease-in-out 0.9s infinite;
+}
+
+/* ---------- 3. endpoint：扫描光层 ----------
+   ::before 是一条对角线扫光，pointer-events:none、z-index:0；
+   isolation:isolate 让它的 stacking context 不外溢；
+   直接子元素提升到 z-index:1，永远盖在扫光之上。 */
+.home-endpoint-shell {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.home-endpoint-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.home-endpoint-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 35%,
+    var(--home-endpoint-scan, rgba(99, 102, 241, 0.14)) 50%,
+    transparent 65%,
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 220% 100%;
+  background-position: -60% 0;
+  opacity: 0.75;
+  animation: home-endpoint-scan 7s ease-in-out 1.6s infinite;
+}
+
+.home-endpoint-shell:hover::before {
+  opacity: 1;
+}
+
+@keyframes home-endpoint-scan {
+  0% {
+    background-position: -60% 0;
+  }
+  55% {
+    background-position: 160% 0;
+  }
+  100% {
+    background-position: 160% 0;
+  }
+}
+
+/* ---------- 4. POST 绿点：覆盖 Tailwind animate-ping 为更柔和的 aura pulse ---------- */
+.home-endpoint-shell .animate-ping {
+  animation: home-post-aura 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes home-post-aura {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+/* ---------- 5. Hero 操作按钮：hover 上浮 + 柔和 shadow + 内部图标微动 ----------
+   只追加 transform / box-shadow，未触碰 Semi 的颜色 / focus / disabled 状态。 */
+.home-hero-actions .semi-button {
+  transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 0.25s ease, background-color 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.home-hero-actions .semi-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -16px rgba(99, 102, 241, 0.5);
+}
+
+html.dark .home-hero-actions .semi-button:hover {
+  box-shadow: 0 16px 34px -16px rgba(129, 140, 248, 0.6);
+}
+
+.home-hero-actions .semi-button .semi-icon,
+.home-hero-actions .semi-button svg {
+  transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.home-hero-actions .semi-button:hover .semi-icon,
+.home-hero-actions .semi-button:hover svg {
+  transform: translateY(-1px) scale(1.05);
+}
+
+/* ---------- 6. Featured 大卡：增强 hover shadow + 品牌色对角线扫光 ---------- */
+.home-provider-featured-card:hover {
+  box-shadow:
+    0 22px 48px -22px var(--home-featured-accent, var(--home-endpoint-border)),
+    0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+html.dark .home-provider-featured-card:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 26px 56px -22px var(--home-featured-accent, var(--home-endpoint-border));
+}
+
+.home-provider-featured-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: linear-gradient(
+    115deg,
+    transparent 30%,
+    var(--home-featured-accent-soft, rgba(99, 102, 241, 0.12)) 50%,
+    transparent 70%
+  );
+  background-repeat: no-repeat;
+  background-size: 220% 100%;
+  background-position: -60% 0;
+  opacity: 0;
+  transition: opacity 0.35s ease,
+    background-position 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.home-provider-featured-card:hover::after {
+  opacity: 1;
+  background-position: 160% 0;
+}
+
+.home-provider-featured-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- 7. 小卡 / "30+ more" 卡：边缘光 + 浅对角扫光 ---------- */
+.home-provider-secondary-card,
+.home-provider-more-card {
+  position: relative;
+}
+
+.home-provider-secondary-card > *,
+.home-provider-more-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.home-provider-secondary-card:hover,
+.home-provider-more-card:hover {
+  box-shadow:
+    inset 0 0 0 1px var(--home-endpoint-border),
+    0 12px 26px -18px var(--home-endpoint-border);
+}
+
+html.dark .home-provider-secondary-card:hover,
+html.dark .home-provider-more-card:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 0 0 1px rgba(129, 140, 248, 0.45),
+    0 14px 30px -18px rgba(129, 140, 248, 0.55);
+}
+
+.home-provider-secondary-card::after,
+.home-provider-more-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: linear-gradient(
+    115deg,
+    transparent 35%,
+    var(--home-card-sweep, rgba(99, 102, 241, 0.08)) 50%,
+    transparent 65%
+  );
+  background-repeat: no-repeat;
+  background-size: 220% 100%;
+  background-position: -60% 0;
+  opacity: 0;
+  transition: opacity 0.3s ease,
+    background-position 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.home-provider-secondary-card:hover::after,
+.home-provider-more-card:hover::after {
+  opacity: 1;
+  background-position: 160% 0;
+}
+
+/* ---------- 8. 入场节奏整体提前（保持 backwards，避免覆盖 hover transform） ---------- */
+.home-hero-subtitle {
+  animation-delay: 0.65s;
+  animation-fill-mode: backwards;
+}
+
+.home-hero-endpoint {
+  animation-delay: 0.78s;
+  animation-fill-mode: backwards;
+}
+
+.home-hero-actions {
+  animation-delay: 0.9s;
+  animation-fill-mode: backwards;
+}
+
+.home-provider-heading-block {
+  animation-delay: 1s;
+  animation-fill-mode: backwards;
+}
+
+.home-provider-featured-card {
+  animation-delay: calc(1.12s + var(--card-i, 0) * 70ms);
+  animation-fill-mode: backwards;
+}
+
+.home-provider-secondary-card,
+.home-provider-more-card {
+  animation-delay: calc(1.35s + var(--card-i, 0) * 32ms);
+  animation-fill-mode: backwards;
+}
+
+.home-feature-strip-block {
+  animation-delay: 1.68s;
+  animation-fill-mode: backwards;
+}
+
+/* ---------- 9. 背景代码：换成更柔和的 18s 呼吸（网格 / 点阵 drift 保留） ---------- */
+.home-tech-code {
+  animation: home-code-enter 0.9s ease-out 0.2s both,
+    home-code-breath-soft 18s ease-in-out 1.6s infinite;
+}
+
+@keyframes home-code-breath-soft {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.82;
+    transform: translateY(-2px);
+  }
+}
+
+/* ---------- 10. 减弱动画偏好：关闭所有新增动画 / 扫描 / hover 位移 / hover shadow / 伪元素 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .home-tech-grid,
+  .home-tech-dots,
+  .home-tech-code,
+  .home-title-gradient-shimmer {
+    animation: none;
+  }
+
+  .home-hero-title-char,
+  .home-hero-title-line-2 {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    animation: none;
+  }
+
+  .home-endpoint-shell::before,
+  .home-provider-featured-card::after,
+  .home-provider-secondary-card::after,
+  .home-provider-more-card::after {
+    display: none;
+  }
+
+  .home-endpoint-shell .animate-ping {
+    animation: none;
+  }
+
+  .home-hero-actions .semi-button {
+    transition: background-color 0.2s ease, color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .home-hero-actions .semi-button:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .home-hero-actions .semi-button:hover .semi-icon,
+  .home-hero-actions .semi-button:hover svg {
+    transform: none;
+  }
+
+  .home-provider-featured-card:hover,
+  .home-provider-secondary-card:hover,
+  .home-provider-more-card:hover {
+    box-shadow: none;
+  }
+}
+
+/* ====================================================================
+   首页科技 HUD 强化覆盖块（v3）— 仅追加、不改 JSX、不改宽高、不改布局
+   仅使用 opacity / transform / filter / box-shadow / text-shadow /
+         background-image / background-position / background-size。
+   所有新增的循环动画 / hover 位移 / 装饰伪元素，均在
+   @media (prefers-reduced-motion: reduce) 中关闭。
+   ==================================================================== */
+
+/* ---------- 0. 全局 HUD 色板（明暗仅颜色不同） ---------- */
+.home-tech {
+  --hud-line: rgba(99, 102, 241, 0.55);
+  --hud-line-soft: rgba(99, 102, 241, 0.18);
+  --hud-scan: rgba(99, 102, 241, 0.22);
+  --hud-data: rgba(34, 211, 238, 0.6);
+  --hud-data-soft: rgba(34, 211, 238, 0.18);
+}
+
+html.dark .home-tech {
+  --hud-line: rgba(129, 140, 248, 0.75);
+  --hud-line-soft: rgba(129, 140, 248, 0.24);
+  --hud-scan: rgba(129, 140, 248, 0.32);
+  --hud-data: rgba(125, 211, 252, 0.82);
+  --hud-data-soft: rgba(125, 211, 252, 0.22);
+}
+
+/* ---------- 1. Hero 背景：横向扫描线 + 数据流脉冲 + 网格呼吸 ---------- */
+
+/* .home-tech-bg 自身保持原位（pointer-events:none / overflow:hidden 已设置），
+   通过两个伪元素叠加扫描线和数据流，不影响既有 grid/dots/glow/code 子元素。 */
+.home-tech-bg::before,
+.home-tech-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ::before = HUD 横向扫描线，慢速纵向漂移，上下淡出 */
+.home-tech-bg::before {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 6px,
+    var(--hud-line-soft) 6px,
+    var(--hud-line-soft) 7px
+  );
+  opacity: 0.45;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 22%,
+    black 78%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 22%,
+    black 78%,
+    transparent 100%
+  );
+  animation: home-hud-scanlines 14s linear infinite;
+  will-change: background-position;
+}
+
+@keyframes home-hud-scanlines {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 21px;
+  }
+}
+
+/* ::after = 一条横向 cyan 数据流细线，在两个不同高度间循环掠过 */
+.home-tech-bg::after {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 42%,
+    var(--hud-data-soft) 47%,
+    var(--hud-data) 50%,
+    var(--hud-data-soft) 53%,
+    transparent 58%,
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 220% 1.5px;
+  background-position: -60% 38%;
+  opacity: 0;
+  filter: blur(0.4px);
+  animation: home-hud-databeam 9s cubic-bezier(0.4, 0, 0.6, 1) 1.2s infinite;
+}
+
+@keyframes home-hud-databeam {
+  0% {
+    background-position: -60% 38%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  45% {
+    background-position: 160% 38%;
+    opacity: 0.7;
+  }
+  50% {
+    background-position: -60% 62%;
+    opacity: 0;
+  }
+  60% {
+    opacity: 0.85;
+  }
+  100% {
+    background-position: 160% 62%;
+    opacity: 0;
+  }
+}
+
+/* 已有 grid drift 70s 之上，再叠一层缓慢的亮度脉冲（不改既有 mask / opacity） */
+.home-tech-grid {
+  animation: home-tech-grid-drift 70s linear infinite,
+    home-hud-grid-pulse 16s ease-in-out infinite;
+}
+
+@keyframes home-hud-grid-pulse {
+  0%,
+  100% {
+    filter: none;
+  }
+  50% {
+    filter: brightness(1.18) saturate(1.05);
+  }
+}
+
+/* Hero 顶部追加一圈 HUD 光晕，呼吸式放大；位于 .home-hero-inner (z-1) 之下 */
+.home-hero-section::before {
+  content: '';
+  position: absolute;
+  top: -22%;
+  left: 50%;
+  width: 60vw;
+  height: 60vw;
+  max-width: 900px;
+  max-height: 900px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(
+    circle at center,
+    var(--home-glow) 0%,
+    transparent 55%
+  );
+  opacity: 0.7;
+  filter: blur(1px);
+  animation: home-hud-aura 11s ease-in-out infinite;
+}
+
+@keyframes home-hud-aura {
+  0%,
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateX(-50%) scale(1.08);
+    opacity: 0.92;
+  }
+}
+
+/* ---------- 2. 标题：字符辉光 + 更密集 shimmer + 加强 sweep ---------- */
+
+/* 每字加轻微电气化辉光（明暗各一套） */
+.home-hero-title-char {
+  text-shadow: 0 0 10px rgba(99, 102, 241, 0.2),
+    0 0 22px rgba(99, 102, 241, 0.12);
+}
+
+html.dark .home-hero-title-char {
+  text-shadow: 0 0 12px rgba(129, 140, 248, 0.32),
+    0 0 28px rgba(129, 140, 248, 0.18);
+}
+
+/* 第二行渐变的金属高光节奏稍快、更明显 */
+.home-title-gradient-shimmer {
+  animation: home-title-shimmer 4.5s ease-in-out 0.9s infinite;
+}
+
+/* 标题下方扫光从 1px 升到 2px + drop-shadow + 中央更亮 */
+.home-hero-title-sweep {
+  height: 2px;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 35%,
+    rgba(99, 102, 241, 0.45) 45%,
+    rgba(99, 102, 241, 0.95) 50%,
+    rgba(99, 102, 241, 0.45) 55%,
+    transparent 65%,
+    transparent 100%
+  );
+  filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.5));
+  animation: home-hero-sweep 5.5s ease-in-out 1.4s infinite;
+}
+
+html.dark .home-hero-title-sweep {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 35%,
+    rgba(167, 139, 250, 0.55) 45%,
+    rgba(167, 139, 250, 1) 50%,
+    rgba(167, 139, 250, 0.55) 55%,
+    transparent 65%,
+    transparent 100%
+  );
+  filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.6));
+}
+
+/* ---------- 3. Endpoint：路径脉冲 + hover 角标 + POST aura + 复制按钮反馈 ---------- */
+
+/* /v1/chat/completions 的轻微 glow + 缓慢透明度脉冲（不改颜色） */
+.home-endpoint-path {
+  text-shadow: 0 0 10px rgba(99, 102, 241, 0.25);
+  animation: home-endpoint-path-pulse 4s ease-in-out infinite;
+}
+
+html.dark .home-endpoint-path {
+  text-shadow: 0 0 12px rgba(122, 162, 255, 0.4);
+}
+
+@keyframes home-endpoint-path-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.78;
+  }
+}
+
+/* endpoint shell hover 时四角点亮 L 形 HUD 角标（不占空间，仅伪元素 background） */
+.home-endpoint-shell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: linear-gradient(
+      to right,
+      var(--hud-line) 0,
+      var(--hud-line) 10px,
+      transparent 10px
+    ),
+    linear-gradient(
+      to bottom,
+      var(--hud-line) 0,
+      var(--hud-line) 10px,
+      transparent 10px
+    ),
+    linear-gradient(
+      to left,
+      var(--hud-line) 0,
+      var(--hud-line) 10px,
+      transparent 10px
+    ),
+    linear-gradient(
+      to top,
+      var(--hud-line) 0,
+      var(--hud-line) 10px,
+      transparent 10px
+    );
+  background-repeat: no-repeat;
+  background-position: 0 calc(100% - 1px), 1px 100%, 100% 1px,
+    calc(100% - 1px) 0;
+  background-size: 10px 1px, 1px 10px, 10px 1px, 1px 10px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.home-endpoint-shell:hover::after {
+  opacity: 0.9;
+}
+
+/* POST 绿点：用更紧凑的能量脉冲覆盖原先的 home-post-aura */
+.home-endpoint-shell .animate-ping {
+  animation: home-post-aura 1.9s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes home-post-aura {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.85);
+  }
+  60% {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+
+/* 复制按钮 hover：轻微放大 + 柔和光环 */
+.home-endpoint-shell .semi-button {
+  transition: transform 0.2s ease, box-shadow 0.2s ease,
+    background-color 0.2s ease, color 0.2s ease;
+}
+
+.home-endpoint-shell .semi-button:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 4px var(--hud-line-soft);
+}
+
+.home-endpoint-shell .semi-button:active {
+  transform: scale(0.94);
+}
+
+/* ---------- 4. Featured 大卡：顶部光束扫光 + 微倾斜 + 图标能量 + 边框增强 ---------- */
+
+/* 入场 backwards 兼容 + 替换 transition 加入新的 transform 曲线 */
+.home-provider-featured-card {
+  transition: background-color 0.2s ease, border-color 0.25s ease,
+    box-shadow 0.3s ease,
+    transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* hover 时微上浮 + 轻微逆时针倾斜，加强边框色和阴影 */
+.home-provider-featured-card:hover {
+  transform: translateY(-4px) rotate(-0.4deg);
+  border-color: var(
+    --home-featured-accent-border,
+    var(--home-endpoint-border)
+  );
+  box-shadow: 0 0 0 1px var(--home-featured-accent-border, transparent),
+    0 22px 50px -22px var(--home-featured-accent, var(--home-endpoint-border)),
+    0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+html.dark .home-provider-featured-card:hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px var(--home-featured-accent-border, transparent),
+    0 28px 58px -22px var(--home-featured-accent, var(--home-endpoint-border));
+}
+
+/* 顶部 highlight 条改为带高光的扫光带；hover 时持续左右扫描 */
+.home-provider-featured-card::before {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--home-featured-accent, transparent) 25%,
+    rgba(255, 255, 255, 0.85) 50%,
+    var(--home-featured-accent, transparent) 75%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  background-position: -60% 0;
+  background-repeat: no-repeat;
+  opacity: 0.85;
+}
+
+.home-provider-featured-card:hover::before {
+  opacity: 1;
+  animation: home-featured-topbeam 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes home-featured-topbeam {
+  from {
+    background-position: -60% 0;
+  }
+  to {
+    background-position: 160% 0;
+  }
+}
+
+/* 对角扫光（已有 ::after）：略加快 */
+.home-provider-featured-card::after {
+  transition: opacity 0.3s ease,
+    background-position 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* 图标 hover：放大 + 轻旋 + 双层 drop-shadow 制造能量感 */
+.home-provider-featured-icon {
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1),
+    filter 0.35s ease;
+}
+
+.home-provider-featured-card:hover .home-provider-featured-icon {
+  transform: scale(1.12) rotate(2deg);
+  filter: drop-shadow(
+      0 8px 16px var(--home-featured-accent-border, rgba(99, 102, 241, 0.5))
+    )
+    drop-shadow(
+      0 0 24px var(--home-featured-accent-soft, rgba(99, 102, 241, 0.5))
+    );
+}
+
+/* ---------- 5. Secondary 小卡 / more 卡：克制的 hover 倾斜 + 微 glow ---------- */
+
+.home-provider-secondary-card,
+.home-provider-more-card {
+  transition: background-color 0.2s ease, border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.home-provider-secondary-card:hover,
+.home-provider-more-card:hover {
+  transform: translateY(-2px) rotate(-0.2deg);
+}
+
+.home-provider-secondary-icon {
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1),
+    filter 0.3s ease;
+}
+
+.home-provider-secondary-card:hover .home-provider-secondary-icon,
+.home-provider-more-card:hover .home-provider-secondary-icon {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 8px var(--hud-line-soft));
+}
+
+/* ---------- 6. Feature 条图标：hover 时 inset 描边 + 柔和外光 ---------- */
+
+.home-feature-icon {
+  transition: transform 0.25s ease, box-shadow 0.25s ease,
+    border-color 0.25s ease, background-color 0.2s ease;
+}
+
+.home-feature-item:hover .home-feature-icon {
+  transform: translateY(-2px) scale(1.08);
+  box-shadow: 0 10px 22px -10px var(--hud-line-soft),
+    inset 0 0 0 1px var(--hud-line);
+}
+
+html.dark .home-feature-item:hover .home-feature-icon {
+  box-shadow: 0 10px 26px -10px var(--hud-line-soft),
+    inset 0 0 0 1px var(--hud-line);
+}
+
+/* ---------- 7. prefers-reduced-motion：关闭新增的所有循环动画与 hover 位移 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .home-tech-bg::before,
+  .home-tech-bg::after,
+  .home-hero-section::before,
+  .home-endpoint-shell::after {
+    display: none;
+  }
+
+  .home-tech-grid,
+  .home-title-gradient-shimmer,
+  .home-endpoint-path,
+  .home-endpoint-shell .animate-ping,
+  .home-provider-featured-card:hover::before {
+    animation: none;
+  }
+
+  .home-hero-title-char,
+  html.dark .home-hero-title-char {
+    text-shadow: none;
+  }
+
+  .home-endpoint-shell .semi-button:hover,
+  .home-endpoint-shell .semi-button:active {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .home-provider-featured-card:hover,
+  .home-provider-secondary-card:hover,
+  .home-provider-more-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .home-provider-featured-card:hover .home-provider-featured-icon,
+  .home-provider-secondary-card:hover .home-provider-secondary-icon,
+  .home-provider-more-card:hover .home-provider-secondary-icon,
+  .home-feature-item:hover .home-feature-icon {
+    transform: none;
+    filter: none;
+    box-shadow: none;
+  }
+}

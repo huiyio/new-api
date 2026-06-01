@@ -1,5 +1,17 @@
 {
   "translation": {
+    "一个 Endpoint，兼容 OpenAI、Claude、Gemini 等主流模型的 API": "Un seul endpoint, compatible avec les API d’OpenAI, Claude, Gemini et d’autres modèles courants.",
+    "更多供应商": "Plus de fournisseurs",
+    "统一接入": "Accès unifié",
+    "一个 Endpoint 接入 40+ 上游供应商": "Un endpoint pour plus de 40 fournisseurs en amont",
+    "兼容 OpenAI API": "Compatible API OpenAI",
+    "直接兼容主流 SDK": "Compatible directement avec les SDK courants",
+    "快速稳定": "Rapide et stable",
+    "低延迟路由与负载均衡": "Routage à faible latence avec répartition de charge",
+    "安全可靠": "Sûr et fiable",
+    "细粒度密钥与访问控制": "Clés et contrôle d’accès granulaires",
+    "高性价比": "Rentable",
+    "透明的按量计费": "Facturation transparente à l’usage",
     " + Web搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}_one": " + Recherche Web {{count}} fois / 1K fois * {{symbol}}{{price}} * {{ratioType}} {{ratio}}",
     " + Web搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}_many": " + Recherche Web {{count}} fois / 1K fois * {{symbol}}{{price}} * {{ratioType}} {{ratio}}",
     " + Web搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}_other": " + Recherche Web {{count}} fois / 1K fois * {{symbol}}{{price}} * {{ratioType}} {{ratio}}",

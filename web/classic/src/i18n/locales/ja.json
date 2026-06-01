@@ -1,5 +1,17 @@
 {
   "translation": {
+    "一个 Endpoint，兼容 OpenAI、Claude、Gemini 等主流模型的 API": "1 つのエンドポイントで OpenAI、Claude、Gemini など主要モデルの API に対応。",
+    "更多供应商": "その他のプロバイダー",
+    "统一接入": "統一アクセス",
+    "一个 Endpoint 接入 40+ 上游供应商": "1 つのエンドポイントで 40+ の上流プロバイダーに接続",
+    "兼容 OpenAI API": "OpenAI API 互換",
+    "直接兼容主流 SDK": "主要な SDK にそのまま対応",
+    "快速稳定": "高速・安定",
+    "低延迟路由与负载均衡": "低遅延ルーティングと負荷分散",
+    "安全可靠": "安全・信頼",
+    "细粒度密钥与访问控制": "きめ細かいキーとアクセス制御",
+    "高性价比": "コスト効率",
+    "透明的按量计费": "従量制の透明な課金",
     " + Web搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}_one": " + Web検索 {{count}}回 / 1K回 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}_one",
     " + Web搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}_other": " + Web検索 {{count}}回 / 1K回 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}_other",
     " + 图片生成调用 {{symbol}}{{price}} / 1次 * {{ratioType}} {{ratio}}": " + 画像生成APIコール {{symbol}}{{price}} / 1回 * {{ratioType}} {{ratio}}",

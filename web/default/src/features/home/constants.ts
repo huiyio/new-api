@@ -43,6 +43,33 @@ export const AI_MODELS = [
   'Gemini.Color',
 ] as const
 
+// Provider showcase - large-model providers rendered in the hero provider grid.
+// `icon` is a @lobehub/icons descriptor consumed by `getLobeIcon`; when an icon
+// is missing it falls back to a stable letter badge (no remote images).
+// `name` values are brand identifiers and intentionally not translated.
+export interface HeroProvider {
+  name: string
+  icon: string
+}
+
+export const HERO_PROVIDERS: HeroProvider[] = [
+  { name: 'OpenAI', icon: 'OpenAI' },
+  { name: 'Claude', icon: 'Claude.Color' },
+  { name: 'Gemini', icon: 'Gemini.Color' },
+  { name: 'Llama', icon: 'Meta.Color' },
+  { name: 'Mistral', icon: 'Mistral.Color' },
+  { name: 'Grok', icon: 'Grok' },
+  { name: 'Azure', icon: 'Azure.Color' },
+  { name: 'DeepSeek', icon: 'DeepSeek.Color' },
+  { name: 'Moonshot', icon: 'Moonshot' },
+  { name: 'Qwen', icon: 'Qwen.Color' },
+  { name: 'Yi', icon: 'Yi.Color' },
+  { name: 'MiniMax', icon: 'Minimax.Color' },
+  { name: 'StepFun', icon: 'Stepfun.Color' },
+  { name: 'Baichuan', icon: 'Baichuan.Color' },
+  { name: '360 AI', icon: 'Ai360.Color' },
+]
+
 // Hero section - Gateway Features
 export const GATEWAY_FEATURES = [
   'Cost Tracking',
