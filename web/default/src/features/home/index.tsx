@@ -63,7 +63,7 @@ export function Home() {
   return (
     <PublicLayout showMainContainer={false}>
       <Hero isAuthenticated={isAuthenticated} />
-      <ProviderGrid className='pt-8 pb-12 md:pt-12 md:pb-16' />
+      <ProviderGrid className='bg-[#f5f7fb] px-4 py-6 dark:bg-slate-950 md:py-8' />
       <FeatureStrip className='px-6 pb-16 md:pb-20' />
       <Stats />
       <Features />
