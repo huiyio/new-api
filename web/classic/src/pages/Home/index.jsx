@@ -219,7 +219,7 @@ const Home = () => {
   }, []);
 
   return (
-    <div className='w-full overflow-x-hidden'>
+    <div className='classic-page-fill classic-home-page w-full overflow-x-hidden'>
       <NoticeModal
         visible={noticeVisible}
         onClose={() => setNoticeVisible(false)}
@@ -472,11 +472,11 @@ const Home = () => {
           </section>
         </div>
       ) : (
-        <div className='overflow-x-hidden w-full'>
+        <div className='classic-page-fill overflow-x-hidden w-full'>
           {homePageContent.startsWith('https://') ? (
             <iframe
               src={homePageContent}
-              className='w-full h-screen border-none'
+              className='w-full h-full border-none'
             />
           ) : (
             <div
