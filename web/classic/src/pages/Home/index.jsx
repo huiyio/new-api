@@ -235,7 +235,7 @@ const Home = () => {
               <div className='home-tech-grid' />
               <div className='home-tech-dots' />
               <div className='home-tech-code' aria-hidden='true'>
-                <div className='home-code-line'><span className='home-code-no'>01</span><span><span className='home-code-method'>POST</span>{' '}<span className='home-code-url'>https://api.newapi.ai/v1/chat/completions</span></span></div>
+                <div className='home-code-line'><span className='home-code-no'>01</span><span><span className='home-code-method'>POST</span>{' '}<span className='home-code-url'>{fullEndpoint}</span></span></div>
                 <div className='home-code-line'><span className='home-code-no'>02</span><span><span className='home-code-key'>Content-Type</span><span className='home-code-punc'>:</span>{' '}<span className='home-code-string'>application/json</span></span></div>
                 <div className='home-code-line'><span className='home-code-no'>03</span><span><span className='home-code-key'>Authorization</span><span className='home-code-punc'>:</span>{' '}<span className='home-code-string'>Bearer sk-*****</span></span></div>
                 <div className='home-code-line'><span className='home-code-no'>04</span><span /></div>

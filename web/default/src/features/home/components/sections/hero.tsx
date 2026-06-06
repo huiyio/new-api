@@ -41,13 +41,17 @@ const TOK = {
   punc: 'text-slate-500/65 dark:text-slate-400/45',
 }
 
+const ENDPOINT_PATH = '/v1/chat/completions'
+
 // 15 row decorative request/payload. Numbered, token-colored, purely visual.
 // Rendered as JSX so each token can carry an independent color class without
-// touching global CSS.
-const CODE_ROWS: ReadonlyArray<ReactNode> = [
+// touching global CSS. The first row's URL is built from the live server
+// address so the snippet mirrors whatever endpoint the deployment actually
+// exposes.
+const buildCodeRows = (endpointUrl: string): ReadonlyArray<ReactNode> => [
   <>
     <span className={TOK.method}>POST</span>{' '}
-    <span className={TOK.url}>https://api.newapi.ai/v1/chat/completions</span>
+    <span className={TOK.url}>{endpointUrl}</span>
   </>,
   <>
     <span className={TOK.key}>Content-Type</span>
@@ -187,6 +191,12 @@ export function Hero(props: HeroProps) {
     (status?.docs_link as string | undefined) || 'https://docs.newapi.pro'
   const docsIsExternal = docsUrl.startsWith('http')
 
+  const serverAddress =
+    (status?.server_address as string | undefined) ||
+    (typeof window !== 'undefined' ? window.location.origin : '')
+  const fullEndpoint = `${serverAddress}${ENDPOINT_PATH}`
+  const codeRows = buildCodeRows(fullEndpoint)
+
   const primaryHref = props.isAuthenticated ? '/keys' : '/sign-up'
 
   const renderDocsButton = () => {
@@ -256,7 +266,7 @@ export function Hero(props: HeroProps) {
             maskComposite: 'intersect',
           }}
         >
-          {CODE_ROWS.map((row, i) => {
+          {codeRows.map((row, i) => {
             const lineNo = String(i + 1).padStart(2, '0')
             return (
               <div key={lineNo} className='flex whitespace-pre'>
