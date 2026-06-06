@@ -20,25 +20,27 @@ import { useState } from 'react'
 import { ExternalLinkIcon, RefreshCcwIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { formatTimestamp, formatTimestampToDate } from '@/lib/format'
+import { formatTimestamp } from '@/lib/format'
+import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Markdown } from '@/components/ui/markdown'
 import { SettingsSection } from '../components/settings-section'
 
-type ReleaseInfo = {
-  tag_name: string
-  name?: string
-  body?: string
-  html_url?: string
-  published_at?: string
+type DockerVersionData = {
+  image: string
+  tracking_tag: string
+  current_version: string
+  latest_version: string
+  latest_revision: string
+  latest_digest: string
+  update_available: boolean
+  package_url: string
 }
 
 type UpdateCheckerSectionProps = {
@@ -53,7 +55,7 @@ export function UpdateCheckerSection({
   const { t } = useTranslation()
   const [checking, setChecking] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [release, setRelease] = useState<ReleaseInfo | null>(null)
+  const [info, setInfo] = useState<DockerVersionData | null>(null)
 
   const uptime = startTime ? formatTimestamp(startTime) : t('Unknown')
   const version = currentVersion || t('Unknown')
@@ -61,35 +63,23 @@ export function UpdateCheckerSection({
   const handleCheckUpdates = async () => {
     setChecking(true)
     try {
-      const response = await fetch(
-        'https://api.github.com/repos/Calcium-Ion/new-api/releases/latest',
-        {
-          headers: {
-            Accept: 'application/vnd.github+json',
-            'User-Agent': 'new-api-dashboard',
-          },
-        }
-      )
-
-      if (!response.ok) {
-        throw new Error(t('Failed to contact GitHub releases API'))
+      const response = await api.get('/api/status/docker-version', {
+        skipBusinessError: true,
+      })
+      const payload = response.data
+      if (!payload?.success || !payload?.data) {
+        throw new Error(payload?.message || t('Failed to check for updates'))
       }
-
-      const data = (await response.json()) as ReleaseInfo
-      if (!data?.tag_name) {
-        throw new Error(t('Unexpected release payload'))
-      }
-
-      if (currentVersion && data.tag_name === currentVersion) {
+      const data = payload.data as DockerVersionData
+      if (!data.update_available) {
         toast.success(
           t('You are running the latest version ({{version}}).', {
-            version: data.tag_name,
+            version: data.latest_version || data.current_version,
           })
         )
         return
       }
-
-      setRelease(data)
+      setInfo(data)
       setDialogOpen(true)
     } catch (error) {
       const message =
@@ -102,9 +92,9 @@ export function UpdateCheckerSection({
     }
   }
 
-  const goToRelease = () => {
-    if (release?.html_url) {
-      window.open(release.html_url, '_blank', 'noopener,noreferrer')
+  const goToPackage = () => {
+    if (info?.package_url) {
+      window.open(info.package_url, '_blank', 'noopener,noreferrer')
     }
   }
 
@@ -144,31 +134,45 @@ export function UpdateCheckerSection({
         <DialogContent className='max-h-[80vh] overflow-y-auto'>
           <DialogHeader>
             <DialogTitle>
-              {release?.tag_name
+              {info?.latest_version
                 ? t('New version available: {{version}}', {
-                    version: release.tag_name,
+                    version: info.latest_version,
                   })
                 : t('Release details')}
             </DialogTitle>
-            {release?.published_at && (
-              <DialogDescription>
-                {t('Published')}{' '}
-                {formatTimestampToDate(
-                  new Date(release.published_at).getTime(),
-                  'milliseconds'
-                )}
-              </DialogDescription>
-            )}
           </DialogHeader>
 
-          <div className='space-y-4'>
-            {release?.body ? (
-              <Markdown>{release.body}</Markdown>
-            ) : (
-              <p className='text-muted-foreground text-sm'>
-                {t('No release notes provided.')}
-              </p>
-            )}
+          <div className='space-y-3 text-sm'>
+            <div className='grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2'>
+              <div className='text-muted-foreground'>{t('Image')}</div>
+              <div className='break-all font-mono'>{info?.image}</div>
+              <div className='text-muted-foreground'>{t('Tracking tag')}</div>
+              <div className='font-mono'>{info?.tracking_tag}</div>
+              <div className='text-muted-foreground'>
+                {t('Current version')}
+              </div>
+              <div className='font-mono'>{info?.current_version}</div>
+              <div className='text-muted-foreground'>
+                {t('Latest version')}
+              </div>
+              <div className='font-mono'>{info?.latest_version}</div>
+              {info?.latest_digest && (
+                <>
+                  <div className='text-muted-foreground'>{t('Digest')}</div>
+                  <div className='break-all font-mono'>
+                    {info.latest_digest}
+                  </div>
+                </>
+              )}
+              {info?.latest_revision && (
+                <>
+                  <div className='text-muted-foreground'>{t('Revision')}</div>
+                  <div className='break-all font-mono'>
+                    {info.latest_revision}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           <DialogFooter>
@@ -179,10 +183,10 @@ export function UpdateCheckerSection({
             >
               {t('Close')}
             </Button>
-            {release?.html_url && (
-              <Button type='button' onClick={goToRelease}>
+            {info?.package_url && (
+              <Button type='button' onClick={goToPackage}>
                 <ExternalLinkIcon className='me-2 h-4 w-4' />
-                {t('Open release')}
+                {t('Open package page')}
               </Button>
             )}
           </DialogFooter>
