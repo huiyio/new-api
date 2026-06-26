@@ -267,6 +267,11 @@ func migrateDB() error {
 	if err := migrateTokenModelLimitsToText(); err != nil {
 		return err
 	}
+	// Ensure channels.key exists and holds no NULLs before AutoMigrate enforces NOT NULL.
+	// PostgreSQL otherwise aborts with SQLSTATE 23502 on existing tables.
+	if err := ensureChannelKeyColumn(); err != nil {
+		return err
+	}
 
 	err := DB.AutoMigrate(
 		&Channel{},
@@ -314,6 +319,10 @@ func migrateDB() error {
 }
 
 func migrateDBFast() error {
+	// Same NOT NULL guard as migrateDB: ensure channels.key before concurrent AutoMigrate.
+	if err := ensureChannelKeyColumn(); err != nil {
+		return err
+	}
 
 	var wg sync.WaitGroup
 
@@ -561,6 +570,68 @@ PRIMARY KEY (` + "`id`" + `)
 		}
 		if err := DB.Exec("ALTER TABLE `" + tableName + "` ADD COLUMN " + col.DDL).Error; err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+// ensureChannelKeyColumn makes sure the channels.key column exists and holds no NULL values
+// before AutoMigrate enforces the NOT NULL constraint declared on Channel.Key. On existing
+// tables PostgreSQL aborts startup migration with SQLSTATE 23502 ("column \"key\" of relation
+// \"channels\" contains null values") when GORM tries to add or promote the column to NOT NULL
+// while rows are NULL. This backfills empty strings and is safe to run repeatedly on SQLite,
+// MySQL, and PostgreSQL without clobbering existing keys.
+func ensureChannelKeyColumn() error {
+	const tableName = "channels"
+
+	// Fresh database: let AutoMigrate create the table with the correct schema.
+	if !DB.Migrator().HasTable(tableName) {
+		return nil
+	}
+
+	keyCol := commonKeyCol // dialect-quoted: "key" on PostgreSQL, `key` elsewhere
+	hasColumn := DB.Migrator().HasColumn(&Channel{}, "key")
+
+	switch {
+	case common.UsingMainDatabase(common.DatabaseTypePostgreSQL):
+		if !hasColumn {
+			// Add as nullable first so existing rows do not violate NOT NULL.
+			if err := DB.Exec(fmt.Sprintf(`ALTER TABLE %s ADD COLUMN %s text`, tableName, keyCol)).Error; err != nil {
+				return fmt.Errorf("ensure channels.key: add column: %w", err)
+			}
+		}
+		if err := DB.Exec(fmt.Sprintf(`UPDATE %s SET %s = '' WHERE %s IS NULL`, tableName, keyCol, keyCol)).Error; err != nil {
+			return fmt.Errorf("ensure channels.key: backfill nulls: %w", err)
+		}
+		// Promote to NOT NULL (idempotent) so AutoMigrate finds a matching schema.
+		if err := DB.Exec(fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN %s SET NOT NULL`, tableName, keyCol)).Error; err != nil {
+			return fmt.Errorf("ensure channels.key: set not null: %w", err)
+		}
+	case common.UsingMainDatabase(common.DatabaseTypeMySQL):
+		if !hasColumn {
+			// TEXT columns cannot carry a DEFAULT on older MySQL, so add nullable then backfill.
+			if err := DB.Exec(fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s text", tableName, keyCol)).Error; err != nil {
+				return fmt.Errorf("ensure channels.key: add column: %w", err)
+			}
+		}
+		if err := DB.Exec(fmt.Sprintf("UPDATE %s SET %s = '' WHERE %s IS NULL", tableName, keyCol, keyCol)).Error; err != nil {
+			return fmt.Errorf("ensure channels.key: backfill nulls: %w", err)
+		}
+		if err := DB.Exec(fmt.Sprintf("ALTER TABLE %s MODIFY COLUMN %s text NOT NULL", tableName, keyCol)).Error; err != nil {
+			return fmt.Errorf("ensure channels.key: set not null: %w", err)
+		}
+	case common.UsingMainDatabase(common.DatabaseTypeSQLite):
+		if !hasColumn {
+			// SQLite can only add a NOT NULL column together with a default, and cannot
+			// ALTER COLUMN afterwards, so add it complete in one statement.
+			if err := DB.Exec(fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s text NOT NULL DEFAULT ''", tableName, keyCol)).Error; err != nil {
+				return fmt.Errorf("ensure channels.key: add column: %w", err)
+			}
+			return nil
+		}
+		// Column already exists; SQLite lacks ALTER COLUMN, so just clear NULLs to keep data consistent.
+		if err := DB.Exec(fmt.Sprintf("UPDATE %s SET %s = '' WHERE %s IS NULL", tableName, keyCol, keyCol)).Error; err != nil {
+			return fmt.Errorf("ensure channels.key: backfill nulls: %w", err)
 		}
 	}
 	return nil
