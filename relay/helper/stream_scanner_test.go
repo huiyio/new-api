@@ -484,7 +484,7 @@ func TestStreamScannerHandler_StreamStatus_InitializedIfNil(t *testing.T) {
 	assert.NotNil(t, info.StreamStatus)
 }
 
-func TestStreamScannerHandler_StreamStatus_ReplacesPreInitialized(t *testing.T) {
+func TestStreamScannerHandler_StreamStatus_PreservesPreInitialized(t *testing.T) {
 	t.Parallel()
 
 	body := buildSSEBody(5)
@@ -495,6 +495,8 @@ func TestStreamScannerHandler_StreamStatus_ReplacesPreInitialized(t *testing.T) 
 
 	StreamScannerHandler(c, resp, info, func(data string, sr *StreamResult) {})
 
+	// StreamScannerHandler 仅在 StreamStatus 为 nil 时才新建，会保留调用方预设的状态，
+	// 因此预先记录的错误必须保留（计数 1），结束时只补充 EndReason。
 	assert.Equal(t, relaycommon.StreamEndReasonDone, info.StreamStatus.EndReason)
-	assert.Equal(t, 0, info.StreamStatus.TotalErrorCount())
+	assert.Equal(t, 1, info.StreamStatus.TotalErrorCount())
 }
