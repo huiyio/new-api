@@ -44,7 +44,7 @@ const FEATURED: FeaturedProvider[] = [
   {
     name: 'OpenAI',
     icon: 'OpenAI',
-    pillKey: '兼容 OpenAI 接口',
+    pillKey: 'OpenAI API compatible',
     accent: 'from-emerald-400/0 via-emerald-400/70 to-emerald-400/0',
     dot: 'bg-emerald-500 dark:bg-emerald-400',
     brandRgb: '52, 211, 153',
@@ -54,7 +54,7 @@ const FEATURED: FeaturedProvider[] = [
   {
     name: 'Claude',
     icon: 'Claude.Color',
-    pillKey: '兼容 Anthropic 接口',
+    pillKey: 'Anthropic API compatible',
     accent: 'from-orange-400/0 via-orange-400/70 to-orange-400/0',
     dot: 'bg-orange-500 dark:bg-orange-400',
     brandRgb: '251, 146, 60',
@@ -64,7 +64,7 @@ const FEATURED: FeaturedProvider[] = [
   {
     name: 'Google Gemini',
     icon: 'Gemini.Color',
-    pillKey: '兼容 Gemini API',
+    pillKey: 'Gemini API compatible',
     accent: 'from-sky-400/0 via-sky-400/70 to-sky-400/0',
     dot: 'bg-sky-500 dark:bg-sky-400',
     brandRgb: '56, 189, 248',
@@ -74,7 +74,7 @@ const FEATURED: FeaturedProvider[] = [
   {
     name: 'DeepSeek',
     icon: 'DeepSeek.Color',
-    pillKey: '兼容 DeepSeek API',
+    pillKey: 'DeepSeek API compatible',
     accent: 'from-indigo-400/0 via-indigo-400/70 to-indigo-400/0',
     dot: 'bg-indigo-500 dark:bg-indigo-400',
     brandRgb: '129, 140, 248',
@@ -84,17 +84,29 @@ const FEATURED: FeaturedProvider[] = [
 ]
 
 const SECONDARY: SecondaryProvider[] = [
-  { name: 'Meta Llama', icon: 'Meta.Color', pillKey: '兼容 OpenAI 接口' },
-  { name: 'Mistral AI', icon: 'Mistral.Color', pillKey: '兼容 OpenAI 接口' },
-  { name: 'xAI Grok', icon: 'Grok', pillKey: '兼容 OpenAI 接口' },
-  { name: 'Azure OpenAI', icon: 'Azure.Color', pillKey: '兼容 OpenAI 接口' },
-  { name: 'Moonshot AI', icon: 'Moonshot', pillKey: '兼容 OpenAI 接口' },
-  { name: 'Qwen', icon: 'Qwen.Color', pillKey: '兼容 OpenAI 接口' },
-  { name: 'Yi', icon: 'Yi.Color', pillKey: '兼容 OpenAI 接口' },
-  { name: 'MiniMax', icon: 'Minimax.Color', pillKey: '兼容 OpenAI 接口' },
-  { name: 'StepFun', icon: 'Stepfun.Color', pillKey: '兼容 OpenAI 接口' },
-  { name: 'Baichuan', icon: 'Baichuan.Color', pillKey: '兼容 OpenAI 接口' },
-  { name: '360 智脑', icon: 'Ai360.Color', pillKey: '兼容 OpenAI 接口' },
+  { name: 'Meta Llama', icon: 'Meta.Color', pillKey: 'OpenAI API compatible' },
+  {
+    name: 'Mistral AI',
+    icon: 'Mistral.Color',
+    pillKey: 'OpenAI API compatible',
+  },
+  { name: 'xAI Grok', icon: 'Grok', pillKey: 'OpenAI API compatible' },
+  {
+    name: 'Azure OpenAI',
+    icon: 'Azure.Color',
+    pillKey: 'OpenAI API compatible',
+  },
+  { name: 'Moonshot AI', icon: 'Moonshot', pillKey: 'OpenAI API compatible' },
+  { name: 'Qwen', icon: 'Qwen.Color', pillKey: 'OpenAI API compatible' },
+  { name: 'Yi', icon: 'Yi.Color', pillKey: 'OpenAI API compatible' },
+  { name: 'MiniMax', icon: 'Minimax.Color', pillKey: 'OpenAI API compatible' },
+  { name: 'StepFun', icon: 'Stepfun.Color', pillKey: 'OpenAI API compatible' },
+  {
+    name: 'Baichuan',
+    icon: 'Baichuan.Color',
+    pillKey: 'OpenAI API compatible',
+  },
+  { name: '360 智脑', icon: 'Ai360.Color', pillKey: 'OpenAI API compatible' },
 ]
 
 // Scoped CSS for the provider grid. Provides:
@@ -277,7 +289,7 @@ export function ProviderGrid(props: ProviderGridProps) {
             className='np-provider-fade-item text-muted-foreground mx-auto mt-2 max-w-xl text-sm'
             style={{ animationDelay: '70ms' }}
           >
-            {t('一套 API，接入所有主流大模型供应商')}
+            {t('One API to access all mainstream large-model providers')}
           </p>
         </div>
 
@@ -285,7 +297,7 @@ export function ProviderGrid(props: ProviderGridProps) {
           {FEATURED.map((provider, index) => (
             <div
               key={provider.name}
-              className='np-provider-card-featured np-provider-fade-item border-[rgba(15,23,42,0.24)] bg-card dark:border-border/60 group relative flex min-h-[220px] flex-col overflow-hidden rounded-[8px] border px-4 py-8 shadow-[0_12px_30px_-16px_rgba(15,23,42,0.42),0_4px_12px_rgba(15,23,42,0.13)] lg:h-[288px]'
+              className='np-provider-card-featured np-provider-fade-item bg-card dark:border-border/60 group relative flex min-h-[220px] flex-col overflow-hidden rounded-[8px] border border-[rgba(15,23,42,0.24)] px-4 py-8 shadow-[0_12px_30px_-16px_rgba(15,23,42,0.42),0_4px_12px_rgba(15,23,42,0.13)] lg:h-[288px]'
               style={
                 {
                   animationDelay: `${140 + index * 70}ms`,
@@ -324,7 +336,7 @@ export function ProviderGrid(props: ProviderGridProps) {
           {SECONDARY.map((provider, index) => (
             <div
               key={provider.name}
-              className='np-provider-card-secondary np-provider-fade-item border-[rgba(15,23,42,0.22)] bg-card dark:border-border/60 hover:border-border hover:bg-card flex min-h-[84px] items-center gap-2.5 overflow-hidden rounded-[8px] border px-3 py-2.5 shadow-[0_9px_22px_-14px_rgba(15,23,42,0.38),0_3px_9px_rgba(15,23,42,0.12)] lg:h-[92px]'
+              className='np-provider-card-secondary np-provider-fade-item bg-card dark:border-border/60 hover:border-border hover:bg-card flex min-h-[84px] items-center gap-2.5 overflow-hidden rounded-[8px] border border-[rgba(15,23,42,0.22)] px-3 py-2.5 shadow-[0_9px_22px_-14px_rgba(15,23,42,0.38),0_3px_9px_rgba(15,23,42,0.12)] lg:h-[92px]'
               style={{ animationDelay: `${420 + index * 40}ms` }}
             >
               <span className='np-provider-secondary-icon flex size-8 shrink-0 items-center justify-center'>
@@ -346,7 +358,7 @@ export function ProviderGrid(props: ProviderGridProps) {
           ))}
 
           <div
-            className='np-provider-card-secondary np-provider-fade-item border-[rgba(15,23,42,0.22)] dark:border-border/60 bg-muted/30 text-muted-foreground flex min-h-[84px] items-center gap-2.5 overflow-hidden rounded-[8px] border px-3 py-2.5 shadow-[0_9px_22px_-14px_rgba(15,23,42,0.38),0_3px_9px_rgba(15,23,42,0.12)] lg:h-[92px]'
+            className='np-provider-card-secondary np-provider-fade-item dark:border-border/60 bg-muted/30 text-muted-foreground flex min-h-[84px] items-center gap-2.5 overflow-hidden rounded-[8px] border border-[rgba(15,23,42,0.22)] px-3 py-2.5 shadow-[0_9px_22px_-14px_rgba(15,23,42,0.38),0_3px_9px_rgba(15,23,42,0.12)] lg:h-[92px]'
             style={{ animationDelay: `${420 + SECONDARY.length * 40}ms` }}
           >
             <span className='np-provider-secondary-icon flex size-8 shrink-0 items-center justify-center text-xs font-bold tracking-tight'>

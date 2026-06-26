@@ -16,11 +16,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useMemo } from 'react'
 import { Check, Copy } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
+import { useStatus } from '@/hooks/use-status'
 import { Button } from '@/components/ui/button'
 
 const ENDPOINT_PATH = '/v1/chat/completions'
@@ -40,13 +40,13 @@ interface ApiEndpointBarProps {
 export function ApiEndpointBar(props: ApiEndpointBarProps) {
   const { t } = useTranslation()
   const { copiedText, copyToClipboard } = useCopyToClipboard()
+  const { status } = useStatus()
 
-  const baseUrl = useMemo(() => {
-    if (typeof window !== 'undefined' && window.location?.origin) {
-      return window.location.origin
-    }
-    return 'https://your-domain.com'
-  }, [])
+  // Same resolution order as the hero code block: the admin-configured server
+  // address wins, the current origin is only a fallback.
+  const baseUrl =
+    (status?.server_address as string | undefined) ||
+    (typeof window !== 'undefined' ? window.location.origin : '')
 
   const fullEndpoint = `${baseUrl}${ENDPOINT_PATH}`
   const isCopied = copiedText === fullEndpoint

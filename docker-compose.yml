@@ -16,7 +16,9 @@ version: '3.4' # For compatibility with older Docker versions
 
 services:
   new-api:
-    image: calciumion/new-api:latest
+    # This fork tracks its own image (built from the custom-home-ui branch).
+    # The in-app update checker compares against this same GHCR image.
+    image: ghcr.io/huiyio/new-api:custom-home-ui
     container_name: new-api
     restart: always
     command: --log-dir /app/logs

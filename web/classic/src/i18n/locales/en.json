@@ -1,5 +1,11 @@
 {
   "translation": {
+    "一套 API，接入所有主流大模型供应商": "One API to access all mainstream large-model providers",
+    "兼容 OpenAI 接口": "OpenAI API compatible",
+    "兼容 Anthropic 接口": "Anthropic API compatible",
+    "兼容 Gemini API": "Gemini API compatible",
+    "兼容 DeepSeek API": "DeepSeek API compatible",
+    "你好，请介绍一下你自己。": "Hello, please introduce yourself.",
     "一个 Endpoint，兼容 OpenAI、Claude、Gemini 等主流模型的 API": "One endpoint, compatible with the APIs of OpenAI, Claude, Gemini and other mainstream models.",
     "更多供应商": "More providers",
     "统一接入": "Unified Access",

@@ -261,7 +261,7 @@ func ListModels(c *gin.Context, modelType int) {
 					}
 				}
 			}
-		} else {
+		} else if len(ownerGroups) > 0 {
 			models = model.GetGroupEnabledModels(ownerGroups[0])
 		}
 		for _, modelName := range models {
@@ -294,11 +294,18 @@ func ListModels(c *gin.Context, modelType int) {
 				Type:        "model",
 			}
 		}
+		// first_id/last_id are nullable in Anthropic's list response; keep them
+		// null instead of indexing into an empty slice.
+		var firstId, lastId any
+		if len(useranthropicModels) > 0 {
+			firstId = useranthropicModels[0].ID
+			lastId = useranthropicModels[len(useranthropicModels)-1].ID
+		}
 		c.JSON(200, gin.H{
 			"data":     useranthropicModels,
-			"first_id": useranthropicModels[0].ID,
+			"first_id": firstId,
 			"has_more": false,
-			"last_id":  useranthropicModels[len(useranthropicModels)-1].ID,
+			"last_id":  lastId,
 		})
 	case constant.ChannelTypeGemini:
 		userGeminiModels := make([]dto.GeminiModel, len(userOpenAiModels))
