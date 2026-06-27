@@ -292,10 +292,10 @@ func migrateDB() error {
 	if err := ensureUserBigintColumns(); err != nil {
 		return err
 	}
-	// Convert legacy users timestamp/date created_at/last_login_at columns to bigint Unix seconds
-	// before AutoMigrate, so PostgreSQL does not abort with SQLSTATE 42846 ("cannot cast type
-	// timestamp with time zone to bigint") on GORM's plain ::bigint cast.
-	if err := ensureUserTimestampColumns(); err != nil {
+	// Convert every legacy timestamp/date created_at/updated_at/last_login_at column across the
+	// AutoMigrated models to bigint Unix seconds before AutoMigrate, so PostgreSQL does not abort with
+	// SQLSTATE 42846 ("cannot cast type timestamp with time zone to bigint") on GORM's plain ::bigint cast.
+	if err := ensureLegacyTimestampBigintColumns(); err != nil {
 		return err
 	}
 
@@ -365,9 +365,10 @@ func migrateDBFast() error {
 	if err := ensureUserBigintColumns(); err != nil {
 		return err
 	}
-	// Same timestamp guard as migrateDB: convert legacy users timestamp/date created_at/last_login_at
-	// columns to bigint Unix seconds before concurrent AutoMigrate.
-	if err := ensureUserTimestampColumns(); err != nil {
+	// Same timestamp guard as migrateDB: convert every legacy timestamp/date created_at/updated_at/
+	// last_login_at column across the AutoMigrated models to bigint Unix seconds before concurrent
+	// AutoMigrate trips SQLSTATE 42846.
+	if err := ensureLegacyTimestampBigintColumns(); err != nil {
 		return err
 	}
 
@@ -1213,86 +1214,118 @@ func isPostgresTimestampType(dataType string) bool {
 	return strings.HasPrefix(dataType, "timestamp")
 }
 
-// userTimestampColumn is a User column declared as int64 Unix seconds (CreatedAt/LastLoginAt) that a
-// legacy PostgreSQL table may instead store as a timestamp/date type. RestoreDefault is the bigint
-// default to set after the type change, or "" to leave the column without a SQL default so the
-// resulting schema matches the model and AutoMigrate does not re-issue ALTER on every restart.
-type userTimestampColumn struct {
+// legacyTimestampBigintColumn identifies one int64 Unix-second column (created_at/updated_at/
+// last_login_at) on an AutoMigrated table that a legacy or externally-created PostgreSQL schema may
+// instead store as a timestamp/date type. RestoreDefault is the bigint default to SET after the type
+// change, or "" to leave the column without a SQL default so the resulting schema matches the model
+// and AutoMigrate does not re-issue ALTER on every restart.
+type legacyTimestampBigintColumn struct {
+	Table          string
 	Name           string
 	RestoreDefault string
 }
 
-// userTimestampColumns lists the User int64 Unix-second columns that a legacy PostgreSQL table may
-// store as a timestamp/date and that must be converted to bigint before AutoMigrate. created_at uses
-// gorm:"autoCreateTime" (set in Go, no SQL default) so it restores no default; last_login_at uses
-// gorm:"default:0" so it restores DEFAULT 0. They are intentionally absent from userBigintColumns,
-// whose verbatim ::bigint cast cannot convert a timestamp value.
-func userTimestampColumns() []userTimestampColumn {
-	return []userTimestampColumn{
-		{Name: "created_at", RestoreDefault: ""},     // gorm:"autoCreateTime" — no SQL default
-		{Name: "last_login_at", RestoreDefault: "0"}, // gorm:"default:0"
+// legacyTimestampBigintColumns lists every int64 Unix-second created_at/updated_at/last_login_at
+// column across the AutoMigrated models. GORM maps these int64 fields to PostgreSQL bigint; when an
+// older or externally-created schema stored one as a timestamp/date, GORM's "ALTER COLUMN ... TYPE
+// bigint USING ...::bigint" aborts startup with SQLSTATE 42846 ("cannot cast type timestamp with time
+// zone to bigint") — the user_subscriptions.created_at case from the production log. AutoMigrate's
+// ReorderModels makes the table that trips first non-deterministic, so every at-risk column is guarded,
+// not only the one the log named. Each entry was confirmed against its struct as an int64 field whose
+// column is created_at/updated_at/last_login_at. Only users.last_login_at declares a gorm SQL default
+// (0); the rest are written by Go (autoCreateTime or BeforeCreate/BeforeUpdate hooks) and restore none.
+//
+// Deliberately excluded, because they carry no 42846 risk: time.Time columns (passkey_credentials,
+// two_fas, custom_oauth_providers, user_oauth_bindings) and gorm.DeletedAt, which are meant to be
+// timestamps; and int64 business-time columns with other names (channels.created_time,
+// tokens.created_time, subscription_orders.create_time/complete_time, user_subscriptions.start_time/
+// end_time, tasks.submit_time/start_time/finish_time, system_instances.started_at/last_seen_at, ...),
+// which GORM has only ever created as bigint.
+func legacyTimestampBigintColumns() []legacyTimestampBigintColumn {
+	return []legacyTimestampBigintColumn{
+		{Table: "users", Name: "created_at"},                         // gorm:"autoCreateTime" — no SQL default
+		{Table: "users", Name: "last_login_at", RestoreDefault: "0"}, // gorm:"default:0"
+		{Table: "logs", Name: "created_at"},
+		{Table: "quota_data", Name: "created_at"},
+		{Table: "tasks", Name: "created_at"},
+		{Table: "tasks", Name: "updated_at"},
+		{Table: "checkins", Name: "created_at"},
+		{Table: "user_subscriptions", Name: "created_at"},
+		{Table: "user_subscriptions", Name: "updated_at"},
+		{Table: "subscription_plans", Name: "created_at"},
+		{Table: "subscription_plans", Name: "updated_at"},
+		{Table: "subscription_pre_consume_records", Name: "created_at"},
+		{Table: "subscription_pre_consume_records", Name: "updated_at"},
+		{Table: "system_instances", Name: "created_at"},
+		{Table: "system_instances", Name: "updated_at"},
+		{Table: "system_tasks", Name: "created_at"},
+		{Table: "system_tasks", Name: "updated_at"},
+		{Table: "system_task_locks", Name: "updated_at"},
 	}
 }
 
-// userTimestampMigrationSQL returns the PostgreSQL statements that convert one legacy timestamp/date
-// users column to a bigint Unix-second column, or nil when no work is needed. dataType is the
+// legacyTimestampBigintMigrationSQL returns the PostgreSQL statements that convert one legacy
+// timestamp/date column to a bigint Unix-second column, or nil when no work is needed. dataType is the
 // column's current information_schema.data_type and exists reports whether the column is present.
 //
-// It returns nil when the column is missing (AutoMigrate adds it correctly), already bigint (so
-// startup never rewrites the table twice), or any non-time type such as integer (AutoMigrate's own
-// ::bigint cast already promotes integer->bigint without the 42846 failure). For an actual
-// timestamp/date column it drops the default first — a legacy now()/CURRENT_TIMESTAMP default cannot
-// be re-coerced to bigint during ALTER COLUMN ... TYPE — then changes the type with
-// EXTRACT(EPOCH FROM ...) to derive Unix seconds, guarding NULL to 0 so the int64 field never reads a
-// NULL. Only last_login_at restores a default (0); created_at deliberately keeps none. The whole
-// thing is value-preserving (a USING expression, never UPDATE/DELETE) and idempotent.
-func userTimestampMigrationSQL(column userTimestampColumn, dataType string, exists bool) []string {
+// It returns nil when the column is missing (AutoMigrate adds it correctly), already bigint (so startup
+// never rewrites the table twice), or any non-time type such as integer (AutoMigrate's own ::bigint
+// cast already promotes integer->bigint without the 42846 failure). For an actual timestamp/date column
+// it drops the default first — a legacy now()/CURRENT_TIMESTAMP default cannot be re-coerced to bigint
+// during ALTER COLUMN ... TYPE — then changes the type with EXTRACT(EPOCH FROM ...) to derive Unix
+// seconds, guarding NULL to 0 so the int64 field never reads a NULL. It restores a default only when the
+// column declares one (users.last_login_at). The conversion is value-preserving (a USING expression,
+// never UPDATE/DELETE) and idempotent.
+func legacyTimestampBigintMigrationSQL(column legacyTimestampBigintColumn, dataType string, exists bool) []string {
 	if !exists || dataType == "bigint" || !isPostgresTimestampType(dataType) {
 		return nil
 	}
+	tbl := `"` + column.Table + `"`
 	col := `"` + column.Name + `"`
 	statements := []string{
-		fmt.Sprintf(`ALTER TABLE users ALTER COLUMN %s DROP DEFAULT`, col),
-		fmt.Sprintf(`ALTER TABLE users ALTER COLUMN %s TYPE bigint USING COALESCE(EXTRACT(EPOCH FROM %s)::bigint, 0)`, col, col),
+		fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN %s DROP DEFAULT`, tbl, col),
+		fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN %s TYPE bigint USING COALESCE(EXTRACT(EPOCH FROM %s)::bigint, 0)`, tbl, col, col),
 	}
 	if column.RestoreDefault != "" {
-		statements = append(statements, fmt.Sprintf(`ALTER TABLE users ALTER COLUMN %s SET DEFAULT %s`, col, column.RestoreDefault))
+		statements = append(statements, fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN %s SET DEFAULT %s`, tbl, col, column.RestoreDefault))
 	}
 	return statements
 }
 
-// ensureUserTimestampColumns converts legacy users timestamp/date columns to bigint Unix seconds on
-// PostgreSQL before AutoMigrate. User.CreatedAt and User.LastLoginAt are int64 and GORM maps them to
-// bigint; when an older table stored them as a timestamp/date (e.g. created_at timestamptz DEFAULT
-// now()), GORM's "ALTER COLUMN ... TYPE bigint USING ...::bigint" aborts startup with SQLSTATE 42846
-// ("cannot cast type timestamp with time zone to bigint"). This pre-migration drops any legacy
-// default, changes the type via EXTRACT(EPOCH FROM ...) with a NULL->0 guard, and restores DEFAULT 0
-// only for last_login_at (created_at keeps none, matching autoCreateTime). It is a no-op on SQLite
-// and MySQL, skips a missing table/column, skips columns already bigint or any non-time type,
-// preserves values without UPDATE/DELETE, and is safe to run repeatedly. It runs alongside
-// ensureUserBigintColumns, which handles the disjoint defaulted-int columns (role/status/quota/...).
-func ensureUserTimestampColumns() error {
+// ensureLegacyTimestampBigintColumns converts every legacy timestamp/date created_at/updated_at/
+// last_login_at column in legacyTimestampBigintColumns to bigint Unix seconds on PostgreSQL before
+// AutoMigrate. The models declare these as int64 (GORM bigint); when an older or externally-created
+// schema stored one as a timestamp/date (e.g. created_at timestamptz DEFAULT now()), GORM's
+// "ALTER COLUMN ... TYPE bigint USING ...::bigint" aborts startup with SQLSTATE 42846 ("cannot cast
+// type timestamp with time zone to bigint") — the user_subscriptions.created_at case from the
+// production log. Because AutoMigrate's ReorderModels makes the first failing table non-deterministic,
+// every at-risk column is guarded here, not just the one the log named. This pre-migration drops any
+// legacy default, changes the type via EXTRACT(EPOCH FROM ...) with a NULL->0 guard, and restores a
+// default only where the model declares one (users.last_login_at). It is a no-op on SQLite and MySQL,
+// skips a missing table/column, skips columns already bigint or any non-time type, preserves values
+// without UPDATE/DELETE, and is safe to run repeatedly. It is the single timestamp pre-migration both
+// migrateDB and migrateDBFast call before AutoMigrate.
+func ensureLegacyTimestampBigintColumns() error {
 	if !common.UsingMainDatabase(common.DatabaseTypePostgreSQL) {
 		return nil
 	}
-	const tableName = "users"
-	// Fresh database: AutoMigrate creates the table as bigint with the correct schema.
-	if !DB.Migrator().HasTable(tableName) {
-		return nil
-	}
-	for _, column := range userTimestampColumns() {
+	for _, column := range legacyTimestampBigintColumns() {
+		// Fresh database / not-yet-created table: AutoMigrate creates it as bigint with the correct schema.
+		if !DB.Migrator().HasTable(column.Table) {
+			continue
+		}
 		var dataType string
 		if err := DB.Raw(`SELECT data_type FROM information_schema.columns
 			WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?`,
-			tableName, column.Name).Scan(&dataType).Error; err != nil {
-			return fmt.Errorf("ensure users.%s: inspect type: %w", column.Name, err)
+			column.Table, column.Name).Scan(&dataType).Error; err != nil {
+			return fmt.Errorf("ensure %s.%s: inspect type: %w", column.Table, column.Name, err)
 		}
-		statements := userTimestampMigrationSQL(column, dataType, dataType != "")
+		statements := legacyTimestampBigintMigrationSQL(column, dataType, dataType != "")
 		if len(statements) == 0 {
 			continue
 		}
-		// Run the drop/alter/restore as one transaction so a failed conversion never leaves the
-		// column without its default.
+		// Run the drop/alter/restore as one transaction so a failed conversion never leaves the column
+		// half-changed.
 		if err := DB.Transaction(func(tx *gorm.DB) error {
 			for _, stmt := range statements {
 				if err := tx.Exec(stmt).Error; err != nil {
@@ -1301,9 +1334,9 @@ func ensureUserTimestampColumns() error {
 			}
 			return nil
 		}); err != nil {
-			return fmt.Errorf("ensure users.%s: convert to bigint: %w", column.Name, err)
+			return fmt.Errorf("ensure %s.%s: convert to bigint: %w", column.Table, column.Name, err)
 		}
-		common.SysLog(fmt.Sprintf("migrated users.%s from %s to bigint", column.Name, dataType))
+		common.SysLog(fmt.Sprintf("migrated %s.%s from %s to bigint", column.Table, column.Name, dataType))
 	}
 	return nil
 }
