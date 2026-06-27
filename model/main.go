@@ -282,11 +282,6 @@ func migrateDB() error {
 	if err := ensureUserUsernameUnique(); err != nil {
 		return err
 	}
-	// Ensure users.password exists and holds no NULLs before AutoMigrate enforces NOT NULL.
-	// PostgreSQL otherwise aborts with SQLSTATE 23502 on existing tables.
-	if err := ensureUserPasswordColumn(); err != nil {
-		return err
-	}
 
 	err := DB.AutoMigrate(
 		&Channel{},
@@ -344,10 +339,6 @@ func migrateDBFast() error {
 	}
 	// Same unique guard as migrateDB: de-duplicate users.username before concurrent AutoMigrate.
 	if err := ensureUserUsernameUnique(); err != nil {
-		return err
-	}
-	// Same NOT NULL guard as migrateDB: ensure users.password before concurrent AutoMigrate.
-	if err := ensureUserPasswordColumn(); err != nil {
 		return err
 	}
 
@@ -912,70 +903,6 @@ func ensureUserUsernameUnique() error {
 			}
 			taken[newName] = struct{}{}
 			common.SysLog(fmt.Sprintf("ensure users.username unique: renamed duplicate id %d to %q to allow unique index", id, newName))
-		}
-	}
-	return nil
-}
-
-// ensureUserPasswordColumn makes sure the users.password column exists and holds no NULL values
-// before AutoMigrate enforces the NOT NULL constraint declared on User.Password. On existing
-// tables PostgreSQL aborts startup migration with SQLSTATE 23502 ("column \"password\" of relation
-// \"users\" contains null values") when GORM tries to add or promote the column to NOT NULL while
-// rows are NULL. This backfills empty strings for NULL passwords without clobbering existing
-// non-NULL password hashes, and is safe to run repeatedly on SQLite, MySQL, and PostgreSQL.
-//
-// The empty-string backfill only satisfies the NOT NULL constraint; the login path never accepts
-// an empty password, so a backfilled row cannot authenticate until its owner sets a real password.
-func ensureUserPasswordColumn() error {
-	const tableName = "users"
-
-	// Fresh database: let AutoMigrate create the table with the correct schema.
-	if !DB.Migrator().HasTable(tableName) {
-		return nil
-	}
-
-	hasColumn := DB.Migrator().HasColumn(&User{}, "password")
-
-	switch {
-	case common.UsingMainDatabase(common.DatabaseTypePostgreSQL):
-		if !hasColumn {
-			// Add as nullable first so existing rows do not violate NOT NULL.
-			if err := DB.Exec(fmt.Sprintf(`ALTER TABLE %s ADD COLUMN password text`, tableName)).Error; err != nil {
-				return fmt.Errorf("ensure users.password: add column: %w", err)
-			}
-		}
-		if err := DB.Exec(fmt.Sprintf(`UPDATE %s SET password = '' WHERE password IS NULL`, tableName)).Error; err != nil {
-			return fmt.Errorf("ensure users.password: backfill nulls: %w", err)
-		}
-		// Promote to NOT NULL (idempotent) so AutoMigrate finds a matching schema.
-		if err := DB.Exec(fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN password SET NOT NULL`, tableName)).Error; err != nil {
-			return fmt.Errorf("ensure users.password: set not null: %w", err)
-		}
-	case common.UsingMainDatabase(common.DatabaseTypeMySQL):
-		if !hasColumn {
-			// TEXT columns cannot carry a DEFAULT on older MySQL, so add nullable then backfill.
-			if err := DB.Exec(fmt.Sprintf("ALTER TABLE %s ADD COLUMN password text", tableName)).Error; err != nil {
-				return fmt.Errorf("ensure users.password: add column: %w", err)
-			}
-		}
-		if err := DB.Exec(fmt.Sprintf("UPDATE %s SET password = '' WHERE password IS NULL", tableName)).Error; err != nil {
-			return fmt.Errorf("ensure users.password: backfill nulls: %w", err)
-		}
-		if err := DB.Exec(fmt.Sprintf("ALTER TABLE %s MODIFY COLUMN password text NOT NULL", tableName)).Error; err != nil {
-			return fmt.Errorf("ensure users.password: set not null: %w", err)
-		}
-	case common.UsingMainDatabase(common.DatabaseTypeSQLite):
-		if !hasColumn {
-			// SQLite can only add a NOT NULL column together with a default, and cannot
-			// ALTER COLUMN afterwards, so add it complete in one statement.
-			if err := DB.Exec(fmt.Sprintf("ALTER TABLE %s ADD COLUMN password text NOT NULL DEFAULT ''", tableName)).Error; err != nil {
-				return fmt.Errorf("ensure users.password: add column: %w", err)
-			}
-			return nil
-		}
-		// Column already exists; SQLite lacks ALTER COLUMN, so just clear NULLs to keep data consistent.
-		if err := DB.Exec(fmt.Sprintf("UPDATE %s SET password = '' WHERE password IS NULL", tableName)).Error; err != nil {
-			return fmt.Errorf("ensure users.password: backfill nulls: %w", err)
 		}
 	}
 	return nil
