@@ -287,6 +287,11 @@ func migrateDB() error {
 	if err := ensureUserPasswordColumn(); err != nil {
 		return err
 	}
+	// Convert legacy users integer columns to bigint before AutoMigrate, so PostgreSQL does not
+	// abort with SQLSTATE 42804 when it re-coerces their DEFAULT during the type change.
+	if err := ensureUserBigintColumns(); err != nil {
+		return err
+	}
 
 	err := DB.AutoMigrate(
 		&Channel{},
@@ -348,6 +353,10 @@ func migrateDBFast() error {
 	}
 	// Same NOT NULL guard as migrateDB: ensure users.password before concurrent AutoMigrate.
 	if err := ensureUserPasswordColumn(); err != nil {
+		return err
+	}
+	// Same bigint guard as migrateDB: promote legacy users integer columns before concurrent AutoMigrate.
+	if err := ensureUserBigintColumns(); err != nil {
 		return err
 	}
 
@@ -977,6 +986,204 @@ func ensureUserPasswordColumn() error {
 		if err := DB.Exec(fmt.Sprintf("UPDATE %s SET password = '' WHERE password IS NULL", tableName)).Error; err != nil {
 			return fmt.Errorf("ensure users.password: backfill nulls: %w", err)
 		}
+	}
+	return nil
+}
+
+// userBigintColumn is a User column declared as a Go int-family field with a GORM default, which
+// GORM resolves to PostgreSQL bigint. Go int is 64-bit, so even the struct tag `type:int` resolves
+// to GORM's abstract Int type and maps to bigint. Default mirrors the struct tag so the column keeps
+// its intended default after the type change.
+type userBigintColumn struct {
+	Name    string
+	Default string
+}
+
+// userBigintColumns lists the User integer columns that carry a GORM default and are promoted to
+// bigint before AutoMigrate. Every entry declares a `default:` in its struct tag and maps to bigint
+// (Go int is 64-bit), so on a legacy table that still stores them as a narrower integer type GORM's
+// own "ALTER COLUMN ... TYPE bigint" re-coerces the column DEFAULT and aborts with SQLSTATE 42804
+// ("default for column \"role\" cannot be cast automatically to type bigint"). InviterId is excluded
+// because it has no default (GORM converts it without re-coercing one); CreatedAt/LastLoginAt are
+// int64 and therefore already bigint. role/status additionally get legacy-string normalization,
+// the quota-family columns only ever hold numbers.
+func userBigintColumns() []userBigintColumn {
+	return []userBigintColumn{
+		{Name: "role", Default: "1"},          // gorm:"type:int;default:1"
+		{Name: "status", Default: "1"},        // gorm:"type:int;default:1"
+		{Name: "quota", Default: "0"},         // gorm:"type:int;default:0"
+		{Name: "used_quota", Default: "0"},    // gorm:"type:int;default:0;column:used_quota"
+		{Name: "request_count", Default: "0"}, // gorm:"type:int;default:0"
+		{Name: "aff_count", Default: "0"},     // gorm:"type:int;default:0;column:aff_count"
+		{Name: "aff_quota", Default: "0"},     // gorm:"type:int;default:0;column:aff_quota"
+		{Name: "aff_history", Default: "0"},   // gorm:"type:int;default:0;column:aff_history"
+	}
+}
+
+// userStringMapping maps a set of legacy free-form tokens (already lowercased and whitespace-trimmed)
+// to a New API numeric value. It is shared by the role and status normalizers.
+type userStringMapping struct {
+	Value  int
+	Tokens []string
+}
+
+// userRoleStringMappings is the single source of truth for normalizing legacy textual user roles
+// into New API numeric roles. It drives userRoleBigintUsingExpr and is asserted directly in tests so
+// the SQL and the documented mapping can never drift. Genuine numeric roles (0/1/10/100, or any
+// custom value) are handled by the numeric passthrough in the USING expression, not here.
+func userRoleStringMappings() []userStringMapping {
+	return []userStringMapping{
+		{Value: common.RoleRootUser, Tokens: []string{"root", "superadmin", "super_admin"}},
+		{Value: common.RoleAdminUser, Tokens: []string{"admin", "administrator"}},
+		{Value: common.RoleCommonUser, Tokens: []string{"common", "user", "normal", "member"}},
+		{Value: common.RoleGuestUser, Tokens: []string{"guest", "anonymous"}},
+	}
+}
+
+// userStatusStringMappings is the single source of truth for normalizing legacy textual user
+// statuses into New API numeric statuses. It drives userStatusBigintUsingExpr and is asserted in
+// tests. Pure-integer strings are intentionally left to the numeric passthrough so the string path
+// preserves the same values the integer column would (e.g. 0/1/2); only purely textual tokens map
+// to the canonical enabled/disabled values.
+func userStatusStringMappings() []userStringMapping {
+	return []userStringMapping{
+		{Value: common.UserStatusEnabled, Tokens: []string{"enabled", "enable", "active", "on", "true", "yes"}},
+		{Value: common.UserStatusDisabled, Tokens: []string{"disabled", "disable", "inactive", "off", "false", "no", "banned", "blocked"}},
+	}
+}
+
+// userStringBigintUsingExpr builds a PostgreSQL USING expression that converts a legacy string
+// column to bigint through a token mapping. Tokens are matched case- and whitespace-insensitively,
+// any pure-integer string is cast verbatim so genuine numeric values survive untouched, and
+// unrecognized free-form text collapses to fallback instead of aborting startup (SQLSTATE 22P02).
+func userStringBigintUsingExpr(column string, mappings []userStringMapping, fallback int) string {
+	norm := fmt.Sprintf(`lower(btrim("%s"::text))`, column)
+	var b strings.Builder
+	b.WriteString("CASE ")
+	for _, m := range mappings {
+		quoted := make([]string, len(m.Tokens))
+		for i, tok := range m.Tokens {
+			quoted[i] = "'" + tok + "'"
+		}
+		b.WriteString(fmt.Sprintf("WHEN %s IN (%s) THEN %d ", norm, strings.Join(quoted, ", "), m.Value))
+	}
+	b.WriteString(fmt.Sprintf("WHEN %s ~ '^[0-9]+$' THEN %s::bigint ", norm, norm))
+	b.WriteString(fmt.Sprintf("ELSE %d END", fallback))
+	return b.String()
+}
+
+// userRoleBigintUsingExpr normalizes a legacy string role column to bigint. Unrecognized text falls
+// back to the least-privilege RoleGuestUser: it never silently escalates an unknown role to admin or
+// root, and recognized privileged tokens (root/admin) are still mapped explicitly.
+func userRoleBigintUsingExpr() string {
+	return userStringBigintUsingExpr("role", userRoleStringMappings(), common.RoleGuestUser)
+}
+
+// userStatusBigintUsingExpr normalizes a legacy string status column to bigint. Unrecognized text
+// falls back to the fail-closed UserStatusDisabled rather than enabling an account whose status
+// could not be parsed.
+func userStatusBigintUsingExpr() string {
+	return userStringBigintUsingExpr("status", userStatusStringMappings(), common.UserStatusDisabled)
+}
+
+// userNumericBigintUsingExpr builds the USING expression for a string-typed numeric column
+// (quota/used_quota/request_count/aff_count/aff_quota/aff_history) that should still hold only
+// numbers: blanks fall back to the column default, everything else is trimmed and cast. Genuine
+// non-numeric junk fails the cast loudly (SQLSTATE 22P02), which the caller wraps with column context.
+func userNumericBigintUsingExpr(column userBigintColumn) string {
+	trimmed := fmt.Sprintf(`btrim("%s"::text)`, column.Name)
+	return fmt.Sprintf(`CASE WHEN %s = '' THEN %s ELSE %s::bigint END`, trimmed, column.Default, trimmed)
+}
+
+// userBigintUsingExpr picks the USING expression for the type change. A numeric source column is
+// cast verbatim (preserving genuine values, including the original SQLSTATE 42804 path). A string
+// source column is normalized: role and status through their legacy-token mappings, the quota-family
+// numeric columns through a trim-and-cast guard.
+func userBigintUsingExpr(column userBigintColumn, isStringType bool) string {
+	col := `"` + column.Name + `"`
+	if !isStringType {
+		return col + `::bigint`
+	}
+	switch column.Name {
+	case "role":
+		return userRoleBigintUsingExpr()
+	case "status":
+		return userStatusBigintUsingExpr()
+	default:
+		return userNumericBigintUsingExpr(column)
+	}
+}
+
+// userBigintMigrationSQL returns the PostgreSQL statements that convert one users column to bigint,
+// or nil when no work is needed. dataType is the column's current information_schema.data_type and
+// exists reports whether the column is present.
+//
+// The conversion drops the DEFAULT first because PostgreSQL re-coerces a column's DEFAULT during
+// ALTER COLUMN ... TYPE; an integer/varchar default cannot be cast automatically to bigint
+// (SQLSTATE 42804), which is what aborts AutoMigrate. The USING expression then changes the type: a
+// numeric source is cast verbatim, while a string source (which may hold legacy values like role =
+// 'admin' or status = 'enabled', the SQLSTATE 22P02 case) is normalized first. After the type change
+// the default is restored. It returns nil when the column is missing (AutoMigrate will add it
+// correctly) or already bigint (so startup never rewrites the table twice).
+func userBigintMigrationSQL(column userBigintColumn, dataType string, exists bool) []string {
+	if !exists || dataType == "bigint" {
+		return nil
+	}
+	col := `"` + column.Name + `"`
+	using := userBigintUsingExpr(column, isPostgresStringType(dataType))
+	return []string{
+		fmt.Sprintf(`ALTER TABLE users ALTER COLUMN %s DROP DEFAULT`, col),
+		fmt.Sprintf(`ALTER TABLE users ALTER COLUMN %s TYPE bigint USING %s`, col, using),
+		fmt.Sprintf(`ALTER TABLE users ALTER COLUMN %s SET DEFAULT %s`, col, column.Default),
+	}
+}
+
+// ensureUserBigintColumns promotes legacy users integer columns to bigint on PostgreSQL before
+// AutoMigrate. GORM maps User's defaulted int fields (Role/Status/Quota/...) to bigint; when an
+// existing table stores them as a narrower type with a DEFAULT, GORM's
+// "ALTER COLUMN ... TYPE bigint USING ...::bigint" makes PostgreSQL re-coerce the DEFAULT and abort
+// with SQLSTATE 42804 ("default for column \"role\" cannot be cast automatically to type bigint").
+// A second class of legacy tables stores these columns as a string type holding non-numeric values
+// (e.g. role = 'admin', status = 'enabled'), where a plain ::bigint cast instead aborts with
+// SQLSTATE 22P02 ("invalid input syntax for type bigint"). This pre-migration drops the default,
+// changes the type with a column-appropriate USING expression (verbatim cast for numeric sources;
+// legacy-token mappings for a string role/status; a trim-and-cast guard for the other string numeric
+// columns), then restores the default. It is a no-op on SQLite (type affinity) and MySQL (implicit
+// default widening), skips a missing table/column, skips columns already bigint, preserves genuine
+// values, and is safe to run repeatedly.
+func ensureUserBigintColumns() error {
+	if !common.UsingMainDatabase(common.DatabaseTypePostgreSQL) {
+		return nil
+	}
+	const tableName = "users"
+	// Fresh database: AutoMigrate creates the table as bigint with the correct defaults.
+	if !DB.Migrator().HasTable(tableName) {
+		return nil
+	}
+	for _, column := range userBigintColumns() {
+		var dataType string
+		if err := DB.Raw(`SELECT data_type FROM information_schema.columns
+			WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?`,
+			tableName, column.Name).Scan(&dataType).Error; err != nil {
+			return fmt.Errorf("ensure users.%s: inspect type: %w", column.Name, err)
+		}
+		statements := userBigintMigrationSQL(column, dataType, dataType != "")
+		if len(statements) == 0 {
+			continue
+		}
+		// Run the drop/alter/restore as one transaction so a failed conversion (e.g. dirty data the
+		// USING cast cannot parse) never leaves the column without its default.
+		if err := DB.Transaction(func(tx *gorm.DB) error {
+			for _, stmt := range statements {
+				if err := tx.Exec(stmt).Error; err != nil {
+					return err
+				}
+			}
+			return nil
+		}); err != nil {
+			return fmt.Errorf("ensure users.%s: convert to bigint: %w", column.Name, err)
+		}
+		common.SysLog(fmt.Sprintf("migrated users.%s from %s to bigint", column.Name, dataType))
 	}
 	return nil
 }
