@@ -277,11 +277,6 @@ func migrateDB() error {
 	if err := ensureChannelBigintColumns(); err != nil {
 		return err
 	}
-	// Ensure users.username holds no duplicate values before AutoMigrate creates its unique index.
-	// PostgreSQL otherwise aborts with SQLSTATE 23505 on existing tables.
-	if err := ensureUserUsernameUnique(); err != nil {
-		return err
-	}
 
 	err := DB.AutoMigrate(
 		&Channel{},
@@ -335,10 +330,6 @@ func migrateDBFast() error {
 	}
 	// Same bigint guard as migrateDB: promote legacy channels integer columns before AutoMigrate.
 	if err := ensureChannelBigintColumns(); err != nil {
-		return err
-	}
-	// Same unique guard as migrateDB: de-duplicate users.username before concurrent AutoMigrate.
-	if err := ensureUserUsernameUnique(); err != nil {
 		return err
 	}
 
@@ -825,85 +816,6 @@ func ensureChannelBigintColumns() error {
 			return fmt.Errorf("ensure channels.%s: convert to bigint: %w", column.Name, err)
 		}
 		common.SysLog(fmt.Sprintf("migrated channels.%s from %s to bigint", column.Name, dataType))
-	}
-	return nil
-}
-
-// ensureUserUsernameUnique de-duplicates users.username before AutoMigrate enforces the unique
-// index declared on User.Username. On existing tables PostgreSQL aborts startup migration with
-// SQLSTATE 23505 ("could not create unique index \"idx_users_username\"") when two or more rows
-// share a username. For each duplicated value it keeps the earliest row (lowest id) unchanged and
-// renames the later rows to a traceable, collision-free username, so no user is deleted and the
-// original owner of a name keeps it.
-//
-// NULL usernames are left untouched because every supported database treats NULLs as distinct in
-// a unique constraint, so multiple NULLs never block the index; empty strings are de-duplicated
-// because they compare equal and collide. The duplicate scan uses raw SQL rather than a GORM model query so
-// it also covers soft-deleted rows, which still occupy the unique index. "username" is not a
-// reserved word on any supported database, so it needs no dialect quoting. The function runs on
-// SQLite, MySQL, and PostgreSQL alike and is safe to run repeatedly.
-func ensureUserUsernameUnique() error {
-	const tableName = "users"
-
-	// Fresh database: let AutoMigrate create the table and its unique index.
-	if !DB.Migrator().HasTable(tableName) {
-		return nil
-	}
-	if !DB.Migrator().HasColumn(&User{}, "username") {
-		return nil
-	}
-
-	// Usernames shared by more than one physical row. NULL is excluded (distinct in a unique
-	// constraint); empty string is included because it collides.
-	var duplicates []string
-	if err := DB.Raw("SELECT username FROM " + tableName +
-		" WHERE username IS NOT NULL GROUP BY username HAVING COUNT(*) > 1").Scan(&duplicates).Error; err != nil {
-		return fmt.Errorf("ensure users.username unique: find duplicates: %w", err)
-	}
-	if len(duplicates) == 0 {
-		return nil
-	}
-
-	// Every username currently stored, so a generated name never collides with a real account or
-	// with another rename performed in this same run.
-	var existing []string
-	if err := DB.Raw("SELECT username FROM " + tableName + " WHERE username IS NOT NULL").Scan(&existing).Error; err != nil {
-		return fmt.Errorf("ensure users.username unique: load existing usernames: %w", err)
-	}
-	taken := make(map[string]struct{}, len(existing))
-	for _, name := range existing {
-		taken[name] = struct{}{}
-	}
-
-	for _, username := range duplicates {
-		var ids []int
-		if err := DB.Raw("SELECT id FROM "+tableName+" WHERE username = ? ORDER BY id ASC", username).Scan(&ids).Error; err != nil {
-			return fmt.Errorf("ensure users.username unique: list rows for username %q: %w", username, err)
-		}
-		if len(ids) < 2 {
-			continue
-		}
-		// Keep the earliest row (ids[0]) untouched; rename every later duplicate.
-		for _, id := range ids[1:] {
-			base := username
-			if base == "" {
-				base = "migration_user"
-			}
-			// Candidate keeps the original name plus the unique row id; a numeric suffix is only
-			// appended when that value is already taken by another account or an earlier rename.
-			newName := fmt.Sprintf("%s_%d", base, id)
-			for suffix := 1; ; suffix++ {
-				if _, exists := taken[newName]; !exists {
-					break
-				}
-				newName = fmt.Sprintf("%s_%d_%d", base, id, suffix)
-			}
-			if err := DB.Exec("UPDATE "+tableName+" SET username = ? WHERE id = ?", newName, id).Error; err != nil {
-				return fmt.Errorf("ensure users.username unique: rename id %d: %w", id, err)
-			}
-			taken[newName] = struct{}{}
-			common.SysLog(fmt.Sprintf("ensure users.username unique: renamed duplicate id %d to %q to allow unique index", id, newName))
-		}
 	}
 	return nil
 }
