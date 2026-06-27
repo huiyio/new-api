@@ -272,6 +272,11 @@ func migrateDB() error {
 	if err := ensureChannelKeyColumn(); err != nil {
 		return err
 	}
+	// Convert legacy channels integer columns to bigint before AutoMigrate, so PostgreSQL
+	// does not abort with SQLSTATE 42804 when it re-coerces their DEFAULT during the type change.
+	if err := ensureChannelBigintColumns(); err != nil {
+		return err
+	}
 
 	err := DB.AutoMigrate(
 		&Channel{},
@@ -321,6 +326,10 @@ func migrateDB() error {
 func migrateDBFast() error {
 	// Same NOT NULL guard as migrateDB: ensure channels.key before concurrent AutoMigrate.
 	if err := ensureChannelKeyColumn(); err != nil {
+		return err
+	}
+	// Same bigint guard as migrateDB: promote legacy channels integer columns before AutoMigrate.
+	if err := ensureChannelBigintColumns(); err != nil {
 		return err
 	}
 
@@ -633,6 +642,96 @@ func ensureChannelKeyColumn() error {
 		if err := DB.Exec(fmt.Sprintf("UPDATE %s SET %s = '' WHERE %s IS NULL", tableName, keyCol, keyCol)).Error; err != nil {
 			return fmt.Errorf("ensure channels.key: backfill nulls: %w", err)
 		}
+	}
+	return nil
+}
+
+// channelBigintColumn is a Channel column declared as a Go int-family field with a GORM
+// default, which GORM maps to PostgreSQL bigint. Default mirrors the struct tag so the
+// column keeps its intended default after the type change.
+type channelBigintColumn struct {
+	Name    string
+	Default string
+}
+
+// channelBigintColumns lists the Channel integer columns that carry a GORM default and are
+// promoted to bigint. These are exactly the int-family fields with a `default:` tag
+// (Type/Status/Weight/AutoBan); the other integer columns either already declare `bigint`
+// (Priority, UsedQuota, *Time) or have no default (ResponseTime), so GORM converts them
+// without re-coercing a DEFAULT and never hits SQLSTATE 42804.
+func channelBigintColumns() []channelBigintColumn {
+	return []channelBigintColumn{
+		{Name: "status", Default: "1"},   // gorm:"default:1"
+		{Name: "type", Default: "0"},     // gorm:"default:0"
+		{Name: "weight", Default: "0"},   // *uint gorm:"default:0"
+		{Name: "auto_ban", Default: "1"}, // *int gorm:"default:1"
+	}
+}
+
+// channelBigintMigrationSQL returns the PostgreSQL statements that convert one channels
+// column to bigint, or nil when no work is needed. dataType is the column's current
+// information_schema.data_type and exists reports whether the column is present.
+//
+// The conversion drops the DEFAULT first because PostgreSQL re-coerces a column's DEFAULT
+// during ALTER COLUMN ... TYPE; an integer/varchar default cannot be cast automatically to
+// bigint (SQLSTATE 42804), which is what aborts AutoMigrate. After the explicit USING cast
+// changes the type, the default is restored. It returns nil when the column is missing
+// (AutoMigrate will add it correctly) or already bigint (so startup never rewrites the table
+// twice).
+func channelBigintMigrationSQL(column channelBigintColumn, dataType string, exists bool) []string {
+	if !exists || dataType == "bigint" {
+		return nil
+	}
+	col := `"` + column.Name + `"`
+	return []string{
+		fmt.Sprintf(`ALTER TABLE channels ALTER COLUMN %s DROP DEFAULT`, col),
+		fmt.Sprintf(`ALTER TABLE channels ALTER COLUMN %s TYPE bigint USING %s::bigint`, col, col),
+		fmt.Sprintf(`ALTER TABLE channels ALTER COLUMN %s SET DEFAULT %s`, col, column.Default),
+	}
+}
+
+// ensureChannelBigintColumns promotes legacy channels integer columns to bigint on
+// PostgreSQL before AutoMigrate. GORM maps Channel's Type/Status/Weight/AutoBan to bigint;
+// when an existing table stores them as a narrower type with a DEFAULT, GORM's
+// "ALTER COLUMN ... TYPE bigint USING ...::bigint" makes PostgreSQL re-coerce the DEFAULT and
+// abort with SQLSTATE 42804 ("default for column \"status\" cannot be cast automatically to
+// type bigint"). This pre-migration drops the default, changes the type with an explicit
+// cast, then restores the default. It is a no-op on SQLite (type affinity) and MySQL
+// (implicit default widening), skips a missing table/column, skips columns already bigint,
+// preserves existing values, and is safe to run repeatedly.
+func ensureChannelBigintColumns() error {
+	if !common.UsingMainDatabase(common.DatabaseTypePostgreSQL) {
+		return nil
+	}
+	const tableName = "channels"
+	// Fresh database: AutoMigrate creates the table as bigint with the correct defaults.
+	if !DB.Migrator().HasTable(tableName) {
+		return nil
+	}
+	for _, column := range channelBigintColumns() {
+		var dataType string
+		if err := DB.Raw(`SELECT data_type FROM information_schema.columns
+			WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?`,
+			tableName, column.Name).Scan(&dataType).Error; err != nil {
+			return fmt.Errorf("ensure channels.%s: inspect type: %w", column.Name, err)
+		}
+		statements := channelBigintMigrationSQL(column, dataType, dataType != "")
+		if len(statements) == 0 {
+			continue
+		}
+		// Run the drop/alter/restore as one transaction so a failed conversion (e.g. dirty
+		// data the USING cast cannot parse) never leaves the column without its default.
+		if err := DB.Transaction(func(tx *gorm.DB) error {
+			for _, stmt := range statements {
+				if err := tx.Exec(stmt).Error; err != nil {
+					return err
+				}
+			}
+			return nil
+		}); err != nil {
+			return fmt.Errorf("ensure channels.%s: convert to bigint: %w", column.Name, err)
+		}
+		common.SysLog(fmt.Sprintf("migrated channels.%s from %s to bigint", column.Name, dataType))
 	}
 	return nil
 }
