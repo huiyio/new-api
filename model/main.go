@@ -668,24 +668,104 @@ func channelBigintColumns() []channelBigintColumn {
 	}
 }
 
+// isPostgresStringType reports whether a PostgreSQL information_schema.data_type names a
+// character/text type. Legacy channels columns persisted as such may hold non-numeric values
+// (e.g. status = 'active'), so a plain ::bigint cast aborts with SQLSTATE 22P02 and the column
+// must instead be normalized with an explicit mapping before the type change.
+func isPostgresStringType(dataType string) bool {
+	switch dataType {
+	case "text", "citext", "name":
+		return true
+	}
+	// "character varying", "character", "varchar", "char", "bpchar".
+	return strings.Contains(dataType, "char")
+}
+
+// channelStatusStringMapping maps a set of legacy free-form status tokens (already lowercased
+// and whitespace-trimmed) to a New API numeric channel status.
+type channelStatusStringMapping struct {
+	Value  int
+	Tokens []string
+}
+
+// channelStatusStringMappings is the single source of truth for normalizing legacy textual
+// channel statuses into New API numeric statuses. It drives the PostgreSQL USING expression in
+// channelStatusBigintUsingExpr and is asserted directly in tests, so the SQL and the documented
+// mapping can never drift. '0' is intentionally treated as a legacy "off" token (-> manually
+// disabled) rather than the New API unknown(0), matching how external systems store the field.
+func channelStatusStringMappings() []channelStatusStringMapping {
+	return []channelStatusStringMapping{
+		{Value: common.ChannelStatusEnabled, Tokens: []string{"active", "enabled", "enable", "true", "1"}},
+		{Value: common.ChannelStatusManuallyDisabled, Tokens: []string{"disabled", "disable", "inactive", "false", "0", "2", "manual_disabled", "manually_disabled", "manual-disabled"}},
+		{Value: common.ChannelStatusAutoDisabled, Tokens: []string{"auto_disabled", "auto-disabled", "auto", "3"}},
+		{Value: common.ChannelStatusUnknown, Tokens: []string{"unknown", ""}},
+	}
+}
+
+// channelStatusBigintUsingExpr builds the PostgreSQL USING expression that converts a legacy
+// string status column to bigint. Tokens are matched case- and whitespace-insensitively. Any
+// other pure-integer string is cast verbatim so genuine numeric values survive untouched, and
+// unrecognized free-form text collapses to unknown(0) instead of aborting startup.
+func channelStatusBigintUsingExpr() string {
+	norm := `lower(btrim("status"::text))`
+	var b strings.Builder
+	b.WriteString("CASE ")
+	for _, m := range channelStatusStringMappings() {
+		quoted := make([]string, len(m.Tokens))
+		for i, tok := range m.Tokens {
+			quoted[i] = "'" + tok + "'"
+		}
+		b.WriteString(fmt.Sprintf("WHEN %s IN (%s) THEN %d ", norm, strings.Join(quoted, ", "), m.Value))
+	}
+	b.WriteString(fmt.Sprintf("WHEN %s ~ '^[0-9]+$' THEN %s::bigint ", norm, norm))
+	b.WriteString(fmt.Sprintf("ELSE %d END", common.ChannelStatusUnknown))
+	return b.String()
+}
+
+// channelNumericBigintUsingExpr builds the USING expression for a string-typed numeric column
+// (type/weight/auto_ban) that should still hold only numbers: blanks fall back to the column
+// default, everything else is trimmed and cast. Genuine non-numeric junk fails the cast loudly
+// (SQLSTATE 22P02), which the caller wraps with column context.
+func channelNumericBigintUsingExpr(column channelBigintColumn) string {
+	trimmed := fmt.Sprintf(`btrim("%s"::text)`, column.Name)
+	return fmt.Sprintf(`CASE WHEN %s = '' THEN %s ELSE %s::bigint END`, trimmed, column.Default, trimmed)
+}
+
+// channelBigintUsingExpr picks the USING expression for the type change. A numeric source column
+// is cast verbatim (preserving genuine values, including the original SQLSTATE 42804 path). A
+// string source column is normalized: status through its legacy-token mapping, the other numeric
+// columns through a trim-and-cast guard.
+func channelBigintUsingExpr(column channelBigintColumn, isStringType bool) string {
+	col := `"` + column.Name + `"`
+	if !isStringType {
+		return col + `::bigint`
+	}
+	if column.Name == "status" {
+		return channelStatusBigintUsingExpr()
+	}
+	return channelNumericBigintUsingExpr(column)
+}
+
 // channelBigintMigrationSQL returns the PostgreSQL statements that convert one channels
 // column to bigint, or nil when no work is needed. dataType is the column's current
 // information_schema.data_type and exists reports whether the column is present.
 //
 // The conversion drops the DEFAULT first because PostgreSQL re-coerces a column's DEFAULT
 // during ALTER COLUMN ... TYPE; an integer/varchar default cannot be cast automatically to
-// bigint (SQLSTATE 42804), which is what aborts AutoMigrate. After the explicit USING cast
-// changes the type, the default is restored. It returns nil when the column is missing
-// (AutoMigrate will add it correctly) or already bigint (so startup never rewrites the table
-// twice).
+// bigint (SQLSTATE 42804), which is what aborts AutoMigrate. The USING expression then changes
+// the type: a numeric source is cast verbatim, while a string source (which may hold legacy
+// values like status = 'active', the SQLSTATE 22P02 case) is normalized first. After the type
+// change the default is restored. It returns nil when the column is missing (AutoMigrate will
+// add it correctly) or already bigint (so startup never rewrites the table twice).
 func channelBigintMigrationSQL(column channelBigintColumn, dataType string, exists bool) []string {
 	if !exists || dataType == "bigint" {
 		return nil
 	}
 	col := `"` + column.Name + `"`
+	using := channelBigintUsingExpr(column, isPostgresStringType(dataType))
 	return []string{
 		fmt.Sprintf(`ALTER TABLE channels ALTER COLUMN %s DROP DEFAULT`, col),
-		fmt.Sprintf(`ALTER TABLE channels ALTER COLUMN %s TYPE bigint USING %s::bigint`, col, col),
+		fmt.Sprintf(`ALTER TABLE channels ALTER COLUMN %s TYPE bigint USING %s`, col, using),
 		fmt.Sprintf(`ALTER TABLE channels ALTER COLUMN %s SET DEFAULT %s`, col, column.Default),
 	}
 }
@@ -695,10 +775,14 @@ func channelBigintMigrationSQL(column channelBigintColumn, dataType string, exis
 // when an existing table stores them as a narrower type with a DEFAULT, GORM's
 // "ALTER COLUMN ... TYPE bigint USING ...::bigint" makes PostgreSQL re-coerce the DEFAULT and
 // abort with SQLSTATE 42804 ("default for column \"status\" cannot be cast automatically to
-// type bigint"). This pre-migration drops the default, changes the type with an explicit
-// cast, then restores the default. It is a no-op on SQLite (type affinity) and MySQL
-// (implicit default widening), skips a missing table/column, skips columns already bigint,
-// preserves existing values, and is safe to run repeatedly.
+// type bigint"). A second class of legacy tables stores these columns as a string type holding
+// non-numeric values (e.g. status = 'active'), where a plain ::bigint cast instead aborts with
+// SQLSTATE 22P02 ("invalid input syntax for type bigint"). This pre-migration drops the default,
+// changes the type with a column-appropriate USING expression (verbatim cast for numeric
+// sources; a legacy-token mapping for a string status; a trim-and-cast guard for the other
+// string numeric columns), then restores the default. It is a no-op on SQLite (type affinity)
+// and MySQL (implicit default widening), skips a missing table/column, skips columns already
+// bigint, preserves genuine values, and is safe to run repeatedly.
 func ensureChannelBigintColumns() error {
 	if !common.UsingMainDatabase(common.DatabaseTypePostgreSQL) {
 		return nil

@@ -121,6 +121,7 @@ func TestChannelBigintMigrationSQL_SkipsWhenNoMigrationNeeded(t *testing.T) {
 // TestChannelBigintMigrationSQL_BuildsCanonicalConversion verifies the exact statements emitted
 // for the column from the production log (status, currently integer), including the ordering that
 // unblocks SQLSTATE 42804: DROP DEFAULT must precede the type change, then the default is restored.
+// A numeric source column keeps its verbatim ::bigint cast.
 func TestChannelBigintMigrationSQL_BuildsCanonicalConversion(t *testing.T) {
 	col := channelBigintColumn{Name: "status", Default: "1"}
 	assert.Equal(t, []string{
@@ -130,20 +131,114 @@ func TestChannelBigintMigrationSQL_BuildsCanonicalConversion(t *testing.T) {
 	}, channelBigintMigrationSQL(col, "integer", true))
 }
 
-// TestChannelBigintMigrationSQL_PreservesValuesForEveryColumn checks every managed column,
-// across the legacy types that trigger the bug (integer and varchar), produces a value-preserving
-// conversion: a USING cast (never an UPDATE/DELETE) and a restored default matching the struct tag.
+// TestChannelStatusBigintUsingExpr_MapsLegacyTokens locks the legacy-string-status mapping that
+// fixes SQLSTATE 22P02 (status stored as text like 'active'). It asserts the documented token ->
+// New API status mapping, case/whitespace insensitivity, the numeric passthrough, and the
+// unknown(0) fallback, evaluating the generated CASE expression on a real SQLite engine so the SQL
+// is verified rather than string-matched.
+func TestChannelStatusBigintUsingExpr_MapsLegacyTokens(t *testing.T) {
+	newChannelKeyMigrationDB(t) // in-memory SQLite
+
+	// SQLite understands lower() but not Postgres btrim()/::text/~ regex; rewrite only those
+	// dialect tokens so the CASE/WHEN logic and literal mapping under test stay intact.
+	expr := channelStatusBigintUsingExpr()
+	expr = strings.ReplaceAll(expr, `"status"::text`, `"status"`)
+	expr = strings.ReplaceAll(expr, `::bigint`, "")
+	expr = strings.ReplaceAll(expr, ` ~ '^[0-9]+$'`, ` GLOB '[0-9]*'`)
+	expr = strings.ReplaceAll(expr, `btrim(`, `trim(`)
+
+	require.NoError(t, DB.Exec(`CREATE TABLE channels (id integer PRIMARY KEY, status text)`).Error)
+
+	cases := []struct {
+		in   string
+		want int64
+	}{
+		{"active", int64(common.ChannelStatusEnabled)},
+		{"ENABLED", int64(common.ChannelStatusEnabled)},
+		{" enable ", int64(common.ChannelStatusEnabled)},
+		{"true", int64(common.ChannelStatusEnabled)},
+		{"1", int64(common.ChannelStatusEnabled)},
+		{"disabled", int64(common.ChannelStatusManuallyDisabled)},
+		{"inactive", int64(common.ChannelStatusManuallyDisabled)},
+		{"  Disable", int64(common.ChannelStatusManuallyDisabled)},
+		{"false", int64(common.ChannelStatusManuallyDisabled)},
+		{"0", int64(common.ChannelStatusManuallyDisabled)},
+		{"2", int64(common.ChannelStatusManuallyDisabled)},
+		{"manual_disabled", int64(common.ChannelStatusManuallyDisabled)},
+		{"manually_disabled", int64(common.ChannelStatusManuallyDisabled)},
+		{"manual-disabled", int64(common.ChannelStatusManuallyDisabled)},
+		{"auto_disabled", int64(common.ChannelStatusAutoDisabled)},
+		{"AUTO-DISABLED", int64(common.ChannelStatusAutoDisabled)},
+		{"auto", int64(common.ChannelStatusAutoDisabled)},
+		{"3", int64(common.ChannelStatusAutoDisabled)},
+		{"42", int64(42)}, // genuine numeric string survives untouched
+		{"unknown", int64(common.ChannelStatusUnknown)},
+		{"", int64(common.ChannelStatusUnknown)},
+		{"   ", int64(common.ChannelStatusUnknown)},
+		{"garbage", int64(common.ChannelStatusUnknown)}, // unrecognized text -> unknown, never aborts
+	}
+	for i, tc := range cases {
+		id := i + 1
+		require.NoError(t, DB.Exec(`INSERT INTO channels (id, status) VALUES (?, ?)`, id, tc.in).Error)
+		var got int64
+		require.NoError(t, DB.Raw(`SELECT (`+expr+`) FROM channels WHERE id = ?`, id).Row().Scan(&got))
+		assert.Equalf(t, tc.want, got, "status %q must map to %d", tc.in, tc.want)
+	}
+}
+
+// TestChannelBigintMigrationSQL_StringStatusUsesMapping proves a string-typed status column no
+// longer emits the bare "status"::bigint cast (which is exactly the SQLSTATE 22P02 trigger) and
+// instead routes through the legacy-token CASE expression, while DROP/SET DEFAULT are unchanged.
+func TestChannelBigintMigrationSQL_StringStatusUsesMapping(t *testing.T) {
+	col := channelBigintColumn{Name: "status", Default: "1"}
+	for _, dataType := range []string{"character varying", "text", "character", "varchar"} {
+		stmts := channelBigintMigrationSQL(col, dataType, true)
+		require.Lenf(t, stmts, 3, "data type %s", dataType)
+		assert.Equal(t, `ALTER TABLE channels ALTER COLUMN "status" DROP DEFAULT`, stmts[0])
+		assert.NotContains(t, stmts[1], `"status"::bigint`, "string status must not use a bare ::bigint cast (SQLSTATE 22P02)")
+		assert.Contains(t, stmts[1], channelStatusBigintUsingExpr(), "string status must route through the legacy-token mapping")
+		assert.Equal(t, `ALTER TABLE channels ALTER COLUMN "status" SET DEFAULT 1`, stmts[2])
+	}
+}
+
+// TestChannelBigintMigrationSQL_StringNumericColumnsGuardBlanks confirms the non-status numeric
+// columns, when found as a string type, trim and cast their value and fall back to the column
+// default for blanks instead of emitting a bare ::bigint cast on raw text.
+func TestChannelBigintMigrationSQL_StringNumericColumnsGuardBlanks(t *testing.T) {
+	for _, column := range channelBigintColumns() {
+		if column.Name == "status" {
+			continue
+		}
+		stmts := channelBigintMigrationSQL(column, "character varying", true)
+		require.Lenf(t, stmts, 3, "column %s", column.Name)
+		quoted := `"` + column.Name + `"`
+		assert.NotContains(t, stmts[1], quoted+`::bigint`, "string %s must not use a bare ::bigint cast", column.Name)
+		assert.Contains(t, stmts[1], "THEN "+column.Default, "blank %s must fall back to its default", column.Name)
+	}
+}
+
+// TestChannelBigintMigrationSQL_PreservesValuesForEveryColumn checks every managed column
+// produces a value-preserving conversion (a USING expression, never an UPDATE/DELETE) and a
+// restored default matching the struct tag, across both legacy source kinds: a numeric source
+// (integer, the SQLSTATE 42804 case) keeps the verbatim ::bigint cast, while a string source
+// (character varying, the SQLSTATE 22P02 case) routes through a normalizing USING expression.
 func TestChannelBigintMigrationSQL_PreservesValuesForEveryColumn(t *testing.T) {
 	for _, column := range channelBigintColumns() {
-		for _, dataType := range []string{"integer", "character varying"} {
-			stmts := channelBigintMigrationSQL(column, dataType, true)
-			require.Len(t, stmts, 3, "column %s (%s)", column.Name, dataType)
+		quoted := `"` + column.Name + `"`
 
-			quoted := `"` + column.Name + `"`
-			assert.Equal(t, `ALTER TABLE channels ALTER COLUMN `+quoted+` DROP DEFAULT`, stmts[0])
-			assert.Equal(t, `ALTER TABLE channels ALTER COLUMN `+quoted+` TYPE bigint USING `+quoted+`::bigint`, stmts[1])
-			assert.Equal(t, `ALTER TABLE channels ALTER COLUMN `+quoted+` SET DEFAULT `+column.Default, stmts[2])
+		intStmts := channelBigintMigrationSQL(column, "integer", true)
+		require.Len(t, intStmts, 3, "column %s (integer)", column.Name)
+		assert.Equal(t, `ALTER TABLE channels ALTER COLUMN `+quoted+` DROP DEFAULT`, intStmts[0])
+		assert.Equal(t, `ALTER TABLE channels ALTER COLUMN `+quoted+` TYPE bigint USING `+quoted+`::bigint`, intStmts[1])
+		assert.Equal(t, `ALTER TABLE channels ALTER COLUMN `+quoted+` SET DEFAULT `+column.Default, intStmts[2])
 
+		strStmts := channelBigintMigrationSQL(column, "character varying", true)
+		require.Len(t, strStmts, 3, "column %s (character varying)", column.Name)
+		assert.Equal(t, `ALTER TABLE channels ALTER COLUMN `+quoted+` DROP DEFAULT`, strStmts[0])
+		assert.Contains(t, strStmts[1], `ALTER TABLE channels ALTER COLUMN `+quoted+` TYPE bigint USING `)
+		assert.Equal(t, `ALTER TABLE channels ALTER COLUMN `+quoted+` SET DEFAULT `+column.Default, strStmts[2])
+
+		for _, stmts := range [][]string{intStmts, strStmts} {
 			for _, stmt := range stmts {
 				upper := strings.ToUpper(stmt)
 				assert.NotContains(t, upper, "UPDATE ", "must not rewrite row values")
